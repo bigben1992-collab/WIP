@@ -93,14 +93,13 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      cursor: pointer;
       transition: all 0.15s ease;
     }
-    .shopping-item-card:hover:not(.completed) {
+    .shopping-item-card:hover {
       border-color: #2563eb;
       background: #eff6ff;
     }
-    .shopping-item-info { display: flex; flex-direction: column; }
+    .shopping-item-info { display: flex; flex-direction: column; flex: 1; cursor: pointer; }
     .shopping-item-name { font-weight: bold; font-size: 13px; color: #1e293b; }
     .shopping-item-code { font-size: 11px; color: #64748b; }
     .shopping-item-qty {
@@ -110,21 +109,6 @@
       font-weight: bold;
       padding: 4px 8px;
       border-radius: 4px;
-    }
-
-    .shopping-item-card.completed {
-      background: #f1f5f9;
-      border-color: #e2e8f0;
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-    .shopping-item-card.completed .shopping-item-name {
-      text-decoration: line-through;
-      color: #94a3b8;
-    }
-    .shopping-item-card.completed .shopping-item-qty {
-      background: #cbd5e1;
-      color: #475569;
     }
 
     .field-row {
@@ -280,7 +264,7 @@
       
       <div class="list-select-box">
         <select id="shoppingListSelect" onchange="renderSelectedShoppingList()">
-          <option value="__temp__">Aktuelle / Nicht gespeicherte Auswahl</option>
+          <option value="__temp__">⚡ Aktuelle Auswahl (Temporär)</option>
         </select>
       </div>
 
@@ -470,21 +454,18 @@
       } else {
         const savedLists = JSON.parse(localStorage.getItem("lager_einkaufslisten") || "{}");
         const listObj = savedLists[selectedKey] || {};
-        const completedMap = JSON.parse(localStorage.getItem("lager_completed_items_" + selectedKey) || "{}");
 
         Object.keys(listObj).forEach(barcode => {
           const foundMaster = allMasterArticles.find(a => String(a.barcode) === String(barcode));
           itemsList.push({
             barcode: barcode,
             name: foundMaster ? foundMaster.name : "Artikel " + barcode,
-            menge: listObj[barcode],
-            gebucht: !!completedMap[barcode]
+            menge: listObj[barcode]
           });
         });
       }
 
-      let openItemsCount = itemsList.filter(item => !item.gebucht).length;
-      badge.innerText = openItemsCount;
+      badge.innerText = itemsList.length;
       container.innerHTML = "";
 
       if (itemsList.length === 0) {
@@ -492,25 +473,41 @@
         return;
       }
 
-      itemsList.sort((a, b) => (a.gebucht === b.gebucht) ? 0 : a.gebucht ? 1 : -1);
-
       itemsList.forEach((item) => {
         let card = document.createElement("div");
-        card.className = "shopping-item-card" + (item.gebucht ? " completed" : "");
+        card.className = "shopping-item-card";
 
-        if (!item.gebucht) {
-          card.onclick = () => selectShoppingItem(item);
-        }
+        const itemJsonStr = JSON.stringify(item).replace(/"/g, '&quot;');
 
         card.innerHTML = `
-          <div class="shopping-item-info">
-            <span class="shopping-item-name">${item.name || 'Unbekannt'}</span>
-            <span class="shopping-item-code">Barcode: ${item.barcode}</span>
+          <div class="shopping-item-info" onclick="selectShoppingItem(${itemJsonStr})">
+            <span class="shopping-item-name">${escapeHtml(item.name || 'Unbekannt')}</span>
+            <span class="shopping-item-code">Barcode: ${escapeHtml(item.barcode)}</span>
           </div>
-          <span class="shopping-item-qty">${item.gebucht ? '✓ Gebucht' : '+' + (item.menge || 1) + ' Stk.'}</span>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span class="shopping-item-qty">+${item.menge || 1} Stk.</span>
+            <button type="button" onclick="removeFromShoppingList('${selectedKey}', '${item.barcode}')" 
+                    style="width:auto; padding: 4px 8px; margin:0; background:#ef4444; font-size:11px;" title="Aus Liste entfernen">🗑️</button>
+          </div>
         `;
         container.appendChild(card);
       });
+    }
+
+    function removeFromShoppingList(listKey, barcode) {
+      if (listKey === "__temp__") {
+        let list = JSON.parse(localStorage.getItem("lagerEinkaufsliste") || "[]");
+        list = list.filter(item => String(item.barcode) !== String(barcode));
+        localStorage.setItem("lagerEinkaufsliste", JSON.stringify(list));
+      } else {
+        const savedLists = JSON.parse(localStorage.getItem("lager_einkaufslisten") || "{}");
+        if (savedLists[listKey] && savedLists[listKey][barcode]) {
+          delete savedLists[listKey][barcode];
+          localStorage.setItem("lager_einkaufslisten", JSON.stringify(savedLists));
+        }
+      }
+      
+      renderSelectedShoppingList();
     }
 
     function selectShoppingItem(item) {
@@ -601,12 +598,12 @@
             plaetzeObj.forEach(p => {
               let pName = p.platz || p.name || p;
               let pMenge = p.menge !== undefined ? p.menge : "?";
-              html += `<span class="place-tag" onclick="selectPlace('${pName}')">📍 ${pName} <span class="badge-qty">${pMenge} Stk.</span></span>`;
+              html += `<span class="place-tag" onclick="selectPlace('${escapeHtml(pName)}')">📍 ${escapeHtml(pName)} <span class="badge-qty">${pMenge} Stk.</span></span>`;
               foundPlaces = true;
             });
           } else if (typeof plaetzeObj === 'object') {
             for (let p in plaetzeObj) {
-              html += `<span class="place-tag" onclick="selectPlace('${p}')">📍 ${p} <span class="badge-qty">${plaetzeObj[p]} Stk.</span></span>`;
+              html += `<span class="place-tag" onclick="selectPlace('${escapeHtml(p)}')">📍 ${escapeHtml(p)} <span class="badge-qty">${plaetzeObj[p]} Stk.</span></span>`;
               foundPlaces = true;
             }
           }
@@ -636,8 +633,8 @@
             status.innerText = "🌐 Produktname gefunden (Open Food Facts)!";
 
             let details = [];
-            if (p.brands) details.push(`<b>Marke:</b> ${p.brands}`);
-            if (p.quantity) details.push(`<b>Menge:</b> ${p.quantity}`);
+            if (p.brands) details.push(`<b>Marke:</b> ${escapeHtml(p.brands)}`);
+            if (p.quantity) details.push(`<b>Menge:</b> ${escapeHtml(p.quantity)}`);
 
             if (details.length > 0) {
               infoContent.innerHTML = details.join(" | ");
@@ -740,19 +737,18 @@
             document.getElementById('invoiceArea').style.display = "block";
           }
 
+          // ARTIKEL AUS DER EINKAUFSLISTE ENTFERNEN & PERSISTENT SPEICHERN
           const selectedKey = document.getElementById("shoppingListSelect").value;
           if (selectedKey === "__temp__") {
             let list = JSON.parse(localStorage.getItem("lagerEinkaufsliste") || "[]");
-            let targetItem = list.find(item => item.barcode === barcode && !item.gebucht);
-            if (targetItem) {
-              targetItem.gebucht = true;
-              localStorage.setItem("lagerEinkaufsliste", JSON.stringify(list));
-            }
+            list = list.filter(item => String(item.barcode) !== String(barcode));
+            localStorage.setItem("lagerEinkaufsliste", JSON.stringify(list));
           } else {
-            const storageKey = "lager_completed_items_" + selectedKey;
-            const completedMap = JSON.parse(localStorage.getItem(storageKey) || "{}");
-            completedMap[barcode] = true;
-            localStorage.setItem(storageKey, JSON.stringify(completedMap));
+            const savedLists = JSON.parse(localStorage.getItem("lager_einkaufslisten") || "{}");
+            if (savedLists[selectedKey] && savedLists[selectedKey][barcode]) {
+              delete savedLists[selectedKey][barcode];
+              localStorage.setItem("lager_einkaufslisten", JSON.stringify(savedLists));
+            }
           }
 
           renderSelectedShoppingList();
@@ -816,6 +812,16 @@
       doc.text("Vielen Dank für Ihren Einkauf!", 14, finalY + 15);
 
       doc.save(`Rechnung_${lastBookingData.id}.pdf`);
+    }
+
+    function escapeHtml(text) {
+      if (!text) return "";
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
     }
   </script>
 </body>
