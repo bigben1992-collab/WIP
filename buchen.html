@@ -278,7 +278,6 @@
         <span style="cursor:pointer;" onclick="toggleShoppingList()">❌ Schließen</span>
       </div>
       
-      <!-- Dropdown zur Auswahl der gewünschten Liste -->
       <div class="list-select-box">
         <select id="shoppingListSelect" onchange="renderSelectedShoppingList()">
           <option value="__temp__">Aktuelle / Nicht gespeicherte Auswahl</option>
@@ -403,6 +402,12 @@
       try { scanner.resume(); } catch(e){}
     }
 
+    function unlockNameField() {
+      let nameInput = document.getElementById('name');
+      nameInput.readOnly = false;
+      nameInput.style.backgroundColor = "#ffffff";
+    }
+
     document.getElementById('barcode').addEventListener('focus', () => {
       document.querySelector('input[name="scanTarget"][value="barcode"]').checked = true;
     });
@@ -429,7 +434,6 @@
       }
     }
 
-    /* --- ERWEITERTE EINKAUFSLISTEN LOGIK --- */
     function initShoppingListDrawer() {
       populateListDropdown();
       renderSelectedShoppingList();
@@ -566,6 +570,7 @@
       let stockBox = document.getElementById('stockLocationBox');
       let stockList = document.getElementById('stockList');
 
+      unlockNameField();
       infoBox.style.display = "none";
       btnUvp.style.display = "none";
       stockBox.style.display = "none";
@@ -582,8 +587,10 @@
           
           if (info.name && info.name !== "Unbekannt") {
             nameInput.value = info.name;
+            nameInput.readOnly = true;
+            nameInput.style.backgroundColor = "#e2e8f0";
             updatePriceByTyp(info);
-            status.innerText = "";
+            status.innerText = "🔒 Name fixiert (im Backend gefunden).";
           }
 
           let plaetzeObj = data.plaetze || info.plaetze || {};
@@ -733,7 +740,6 @@
             document.getElementById('invoiceArea').style.display = "block";
           }
 
-          // Markiere Artikel in der ausgewählten Liste als gebucht
           const selectedKey = document.getElementById("shoppingListSelect").value;
           if (selectedKey === "__temp__") {
             let list = JSON.parse(localStorage.getItem("lagerEinkaufsliste") || "[]");
@@ -752,6 +758,7 @@
           renderSelectedShoppingList();
 
           document.getElementById('bookingForm').reset();
+          unlockNameField();
           document.getElementById('productInfoBox').style.display = "none";
           document.getElementById('stockLocationBox').style.display = "none";
           document.querySelector('input[name="scanTarget"][value="barcode"]').checked = true;
