@@ -44,8 +44,11 @@
     .btn-secondary:hover { background: #475569; }
     .btn-cancel { background: #dc2626; }
     .btn-cancel:hover { background: #b91c1c; }
+    .btn-edit { background: #d97706; }
+    .btn-edit:hover { background: #b45309; }
+    .btn-sm-del { background: #ef4444; padding: 4px 8px; font-size: 12px; min-width: auto; flex: none; }
+    .btn-sm-del:hover { background: #dc2626; }
     
-    /* Toggle Button & Klapp-Container */
     .toggle-list-btn {
       background: #0f766e;
       color: #fff;
@@ -68,7 +71,7 @@
       padding: 12px;
       border-radius: 6px;
       margin-bottom: 15px;
-      display: none; /* Inital zugeklappt */
+      display: none;
       gap: 10px;
       align-items: center;
       flex-wrap: wrap;
@@ -77,13 +80,17 @@
     .active-filter-badge {
       background: #dbeafe;
       color: #1e40af;
-      padding: 6px 12px;
-      border-radius: 4px;
+      padding: 10px 14px;
+      border-radius: 6px;
       font-size: 13px;
       font-weight: bold;
       border: 1px solid #bfdbfe;
       display: none;
       margin-bottom: 10px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
     .table-container { overflow-x: auto; }
@@ -126,14 +133,11 @@
   <div class="card">
     <h2 id="pageTitle">Bestandsabfrage & Einkaufslisten</h2>
 
-    <!-- Scanner / Kamera ganz oben -->
     <div id="reader"></div>
 
-    <!-- Hauptfilter & Steuerung -->
     <div class="filter-box">
       <div class="filter-row">
         <span><strong>Auswahlbasis:</strong></span>
-        <!-- Reihenfolge getauscht & "all" als checked gesetzt -->
         <label><input type="radio" name="viewMode" value="all" checked onchange="switchViewMode()"> 📦 Alle Artikel</label>
         <label><input type="radio" name="viewMode" value="zero" onchange="switchViewMode()"> ⚠️ Nur Bestand 0</label>
       </div>
@@ -160,7 +164,6 @@
       <button class="btn-pdf" onclick="generateShoppingListPDF()">📄 PDF Drucken</button>
     </div>
 
-    <!-- EINKAUFSLISTEN-VERWALTUNG (Ausklappbar über der Ergebnisanzeige) -->
     <button class="toggle-list-btn" onclick="toggleListManager()">
       <span>📁 Gespeicherte Einkaufslisten verwalten</span>
       <span id="toggleIcon">▼</span>
@@ -170,16 +173,19 @@
       <select id="savedListsDropdown" class="filter-input" style="flex: 1; min-width: 200px;">
         <option value="">-- Keine Liste ausgewählt --</option>
       </select>
-      <button class="btn-secondary" style="flex: 0; min-width: 100px;" onclick="loadSelectedList()">📂 Laden</button>
-      <button class="btn-cancel" style="flex: 0; min-width: 100px;" onclick="deleteSelectedList()">🗑️ Löschen</button>
+      <button class="btn-secondary" style="flex: 0; min-width: 90px;" onclick="loadSelectedList()">📂 Laden</button>
+      <button class="btn-edit" style="flex: 0; min-width: 110px;" onclick="editSelectedList()">✏️ Bearbeiten</button>
+      <button class="btn-cancel" style="flex: 0; min-width: 90px;" onclick="deleteSelectedList()">🗑️ Löschen</button>
       <button id="btnClearFilter" class="btn-secondary" style="flex: 0; min-width: 120px; display: none;" onclick="clearActiveListFilter()">❌ Filter aufheben</button>
     </div>
 
     <div id="activeFilterBadge" class="active-filter-badge">
-      📌 Aktiver Listen-Filter: <span id="activeListName"></span>
+      <div>📌 Aktive Liste: <span id="activeListName"></span></div>
+      <div>
+        <button class="btn-secondary" style="padding: 4px 8px; font-size: 12px; min-width: auto; display: inline-block;" onclick="enableAddMoreMode()">➕ Artikel hinzufügen</button>
+      </div>
     </div>
 
-    <!-- Statusmeldung & Ergebnisanzeige (Tabelle) -->
     <div id="status">Bereit.</div>
 
     <div class="table-container">
@@ -193,6 +199,7 @@
             <th>EK-Preis (€)</th>
             <th style="width: 100px;">Bestellmenge</th>
             <th>Lagerplatz</th>
+            <th style="width: 50px; text-align: center;">Aktion</th>
           </tr>
         </thead>
         <tbody id="tableBody"></tbody>
@@ -217,6 +224,7 @@
     let rawArticlesData = [];
     let shoppingCart = new Map(); // Barcode -> Menge
     let activeListName = null;
+    let isAddMoreMode = false;
     let pendingScanText = "";
     let isPaused = false;
 
@@ -253,7 +261,6 @@
       updateSavedListsDropdown();
     });
 
-    /* Toggle-Funktion für die Listenverwaltung */
     function toggleListManager() {
       const box = document.getElementById("listManagerBox");
       const icon = document.getElementById("toggleIcon");
@@ -348,7 +355,7 @@
         plaetze: Array.isArray(item.plaetze) ? item.plaetze : (item.platz ? [item.platz] : [])
       }));
 
-      if (activeListName) {
+      if (activeListName && !isAddMoreMode) {
         displayList = displayList.filter(a => shoppingCart.has(a.barcode));
       } else if (viewMode === "zero") {
         displayList = displayList.filter(a => a.bestand <= 0);
@@ -406,6 +413,9 @@
               onchange="updateQuantity('${item.barcode}', this.value)">
           </td>
           <td>${plaetzeHtml}</td>
+          <td style="text-align: center;">
+            <button class="btn-sm-del" onclick="removeItemFromCart('${item.barcode}')" title="Artikel entfernen">🗑️</button>
+          </td>
         `;
         tbody.appendChild(row);
       });
@@ -440,6 +450,12 @@
       }
     }
 
+    function removeItemFromCart(barcode) {
+      shoppingCart.delete(barcode);
+      syncToBuchenStorage();
+      applyFilters();
+    }
+
     function selectAll(checkState) {
       const checkboxes = document.querySelectorAll('#tableBody input[type="checkbox"]');
       checkboxes.forEach(chk => {
@@ -461,7 +477,6 @@
       syncToBuchenStorage();
     }
 
-    /* --- SYNCHRONISATION MIT BUCHEN.HTML --- */
     function syncToBuchenStorage() {
       const buchenArray = [];
       shoppingCart.forEach((qty, barcode) => {
@@ -474,8 +489,6 @@
       });
       localStorage.setItem("lagerEinkaufsliste", JSON.stringify(buchenArray));
     }
-
-    /* --- LOCALSTORAGE SPEICHERUNG --- */
 
     function saveCurrentList() {
       if (shoppingCart.size === 0) {
@@ -497,10 +510,17 @@
       lists[listName.trim()] = itemsObj;
       localStorage.setItem("lager_einkaufslisten", JSON.stringify(lists));
 
-      syncToBuchenStorage();
+      activeListName = listName.trim();
+      isAddMoreMode = false;
+      document.getElementById("activeListName").innerText = activeListName;
+      document.getElementById("activeFilterBadge").style.display = "flex";
+      document.getElementById("btnClearFilter").style.display = "inline-block";
 
-      alert(`✅ Einkaufsliste "${listName}" wurde erfolgreich gespeichert!`);
-      updateSavedListsDropdown(listName.trim());
+      syncToBuchenStorage();
+      updateSavedListsDropdown(activeListName);
+      applyFilters();
+
+      alert(`✅ Einkaufsliste "${activeListName}" wurde erfolgreich gespeichert!`);
     }
 
     function updateSavedListsDropdown(selectKey = "") {
@@ -539,16 +559,27 @@
       });
 
       activeListName = name;
+      isAddMoreMode = false;
       document.getElementById("activeListName").innerText = name;
-      document.getElementById("activeFilterBadge").style.display = "block";
+      document.getElementById("activeFilterBadge").style.display = "flex";
       document.getElementById("btnClearFilter").style.display = "inline-block";
 
       syncToBuchenStorage();
       applyFilters();
     }
 
+    function editSelectedList() {
+      loadSelectedList();
+    }
+
+    function enableAddMoreMode() {
+      isAddMoreMode = true;
+      applyFilters();
+    }
+
     function clearActiveListFilter() {
       activeListName = null;
+      isAddMoreMode = false;
       document.getElementById("activeFilterBadge").style.display = "none";
       document.getElementById("btnClearFilter").style.display = "none";
       document.getElementById("savedListsDropdown").value = "";
@@ -574,8 +605,6 @@
         alert(`🗑️ Liste "${name}" wurde gelöscht.`);
       }
     }
-
-    /* --- PDF LOGIK --- */
 
     function generateShoppingListPDF() {
       if (shoppingCart.size === 0) {
