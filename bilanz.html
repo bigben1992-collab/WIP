@@ -50,10 +50,12 @@
     .chart-btn-group button.active { background: #2563eb; color: white; border-color: #2563eb; }
     .chart-container { position: relative; max-width: 450px; margin: 0 auto; height: 280px; }
 
+    .no-data-msg { text-align: center; color: #64748b; font-style: italic; padding: 20px 0; }
+
     /* Benutzerdefinierte Legende */
-    .chart-legend { display: none; flex-direction: column; gap: 5px; margin-top: 15px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #f8fafc; }
+    .chart-legend { display: flex; flex-direction: column; gap: 5px; margin-top: 15px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #f8fafc; }
     .legend-item { display: flex; align-items: center; gap: 8px; font-size: 14px; }
-    .legend-color { width: 16px; height: 16px; border-radius: 4px; }
+    .legend-color { width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; }
 
     /* Tabelle für Einzeltransaktionen */
     .table-container { overflow-x: auto; margin-top: 15px; }
@@ -129,17 +131,23 @@
     </div>
   </div>
 
-  <div class="card" id="chartCard" style="display: none;">
+  <div class="card" id="chartCard">
     <h3>Prozentuale Verteilung</h3>
     <div class="chart-btn-group">
       <button id="btnTabLager" class="active" onclick="switchChartTab('lager')">Lagerwert / Kapital (%)</button>
       <button id="btnTabUmsatz" onclick="switchChartTab('umsatz')">Umsatzanteil (%)</button>
       <button id="btnTabEinkauf" onclick="switchChartTab('einkauf')">Wareneinkauf (%)</button>
+      <button id="btnTabGewinn" onclick="switchChartTab('gewinn')">Gewinnanteil (%)</button>
     </div>
-    <div class="chart-container">
+    
+    <div id="noDataChartMsg" class="no-data-msg" style="display: none;">
+      Keine Daten für die gewählte Kategorie im ausgewählten Zeitraum vorhanden.
+    </div>
+
+    <div class="chart-container" id="chartWrapper">
       <canvas id="prozentChart"></canvas>
     </div>
-    <div id="chartLegend" class="chart-legend"></div>
+    <div id="chartLegend" class="chart-legend" style="display: none;"></div>
   </div>
 
   <div class="card" id="transaktionenCard" style="display: none;">
@@ -173,7 +181,6 @@
     let chartInstance = null;
     let currentChartMode = 'lager';
 
-    // Kamera-Scanner ein-/ausblenden
     function toggleScanner() {
       const wrapper = document.getElementById("scannerWrapper");
       if (!isScannerActive) {
@@ -181,7 +188,7 @@
         html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 200 });
         html5QrcodeScanner.render((text) => {
           document.getElementById('artikelFilter').value = text;
-          toggleScanner(); // Nach erfolgreichem Scan ausblenden
+          toggleScanner();
           ladeBilanz();
         });
         isScannerActive = true;
@@ -194,7 +201,6 @@
       }
     }
 
-    // Auto-Submit bei Enter-Taste im Suchfeld
     document.getElementById("artikelFilter").addEventListener("keypress", function(e) {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -246,7 +252,6 @@
           document.getElementById("lagerwert").innerText = `${data.data.lagerwert ?? "0.00"} €`;
           document.getElementById("lagerwertVK").innerText = `${data.data.lagerwertVK ?? "0.00"} €`;
 
-          // Transaktionstabelle & Diagramm rendern
           rendereTransaktionen(aktuelleTransaktionen);
           renderChart();
           
@@ -268,70 +273,110 @@
       document.getElementById('btnTabLager').classList.toggle('active', mode === 'lager');
       document.getElementById('btnTabUmsatz').classList.toggle('active', mode === 'umsatz');
       document.getElementById('btnTabEinkauf').classList.toggle('active', mode === 'einkauf');
+      document.getElementById('btnTabGewinn').classList.toggle('active', mode === 'gewinn');
       renderChart();
     }
 
     function renderChart() {
-      const card = document.getElementById("chartCard");
       const legend = document.getElementById("chartLegend");
-      
-      if (!aktuelleBilanzData) {
-        card.style.display = "none";
-        legend.style.display = "none";
-        return;
-      }
+      const chartWrapper = document.getElementById("chartWrapper");
+      const noDataMsg = document.getElementById("noDataChartMsg");
 
       let rawItems = [];
-      if (currentChartMode === 'lager') {
-        rawItems = aktuelleBilanzData.anteilLagerwert;
-      } else if (currentChartMode === 'umsatz') {
-        rawItems = aktuelleBilanzData.anteilUmsatz;
-      } else if (currentChartMode === 'einkauf') {
-        rawItems = aktuelleBilanzData.anteilEinkauf;
+      
+      if (aktuelleBilanzData) {
+        if (currentChartMode === 'lager') {
+          rawItems = aktuelleBilanzData.anteilLagerwert;
+        } else if (currentChartMode === 'umsatz') {
+          rawItems = aktuelleBilanzData.anteilUmsatz;
+        } else if (currentChartMode === 'einkauf') {
+          rawItems = aktuelleBilanzData.anteilEinkauf;
+        } else if (currentChartMode === 'gewinn') {
+          // Gewinn pro Artikel aus Transaktionen berechnen (VK - EK)
+          const gewinnMap = {};
+          (aktuelleTransaktionen || []).forEach(t => {
+            const artikelName = (t.artikel || "Unbekannt").trim().replace(/\s+/g, ' ');
+            const gesamtVal = parseFloat(String(t.gesamt).replace(',', '.')) || 0;
+            
+            if (!gewinnMap[artikelName]) gewinnMap[artikelName] = 0;
+            
+            if (t.typ === "VK") {
+              gewinnMap[artikelName] += gesamtVal;
+            } else if (t.typ === "EK") {
+              gewinnMap[artikelName] -= gesamtVal;
+            }
+          });
+
+          rawItems = Object.keys(gewinnMap).map(key => ({
+            artikel: key,
+            wert: gewinnMap[key]
+          }));
+        }
       }
 
+      // Prüfen, ob Daten vorhanden sind
       if (!rawItems || rawItems.length === 0) {
-        card.style.display = "none";
+        if (chartInstance) chartInstance.destroy();
+        chartWrapper.style.display = "none";
         legend.style.display = "none";
+        noDataMsg.style.display = "block";
         return;
       }
 
-      // 1. Absolute Euro-Werte nach bereinigtem Artikelnamen aufsummieren
+      // 1. Werte aufsummieren
       const groupedValues = {};
       let gesamtWert = 0;
 
       rawItems.forEach(item => {
         let rawName = item.artikel ? String(item.artikel) : "Unbekannt";
         let cleanName = rawName.trim().replace(/\s+/g, ' '); 
-
         const val = parseFloat(String(item.wert).replace(',', '.')) || 0;
 
         if (!groupedValues[cleanName]) {
           groupedValues[cleanName] = 0;
         }
         groupedValues[cleanName] += val;
-        gesamtWert += val;
       });
 
-      const labels = Object.keys(groupedValues);
-      
-      // 2. Prozentanteile basierend auf der aufsummierten Gesamtsumme berechnen
+      // Beim Gewinndiagramm nur positive Gewinne berücksichtigen
+      const labels = Object.keys(groupedValues).filter(label => {
+        return currentChartMode === 'gewinn' ? groupedValues[label] > 0 : groupedValues[label] >= 0;
+      });
+
+      labels.forEach(label => {
+        gesamtWert += groupedValues[label];
+      });
+
+      if (labels.length === 0 || gesamtWert <= 0) {
+        if (chartInstance) chartInstance.destroy();
+        chartWrapper.style.display = "none";
+        legend.style.display = "none";
+        noDataMsg.innerText = currentChartMode === 'gewinn' 
+          ? "Kein positiver Rohgewinn im ausgewählten Zeitraum erzielt." 
+          : "Keine Daten für die gewählte Kategorie im ausgewählten Zeitraum vorhanden.";
+        noDataMsg.style.display = "block";
+        return;
+      }
+
+      noDataMsg.style.display = "none";
+      chartWrapper.style.display = "block";
+
+      // 2. Prozentanteile berechnen
       const wertes = labels.map(label => groupedValues[label]);
       const values = labels.map(label => {
         return gesamtWert > 0 ? ((groupedValues[label] / gesamtWert) * 100).toFixed(2) : 0;
       });
 
-      // 3. Dynamische Farbpalette generieren (garantiert eindeutige Farben für jeden Artikel)
+      // 3. Dynamische Farbpalette
       const colors = labels.map((_, i) => {
         const hue = (i * 137.5) % 360; 
         return `hsl(${hue}, 65%, 50%)`;
       });
 
-      card.style.display = "block";
       legend.style.display = "flex";
-      legend.innerHTML = ""; // Vorherige Legende löschen
+      legend.innerHTML = ""; 
 
-      // 4. Benutzerdefinierte Legende generieren
+      // 4. Benutzerdefinierte Legende
       labels.forEach((label, i) => {
         const legendItem = document.createElement("div");
         legendItem.className = "legend-item";
@@ -341,7 +386,7 @@
         legendColor.style.backgroundColor = colors[i];
         
         const legendText = document.createElement("span");
-        legendText.innerText = `${label} (${values[i]}%)`;
+        legendText.innerText = `${label} (${values[i]}% | ${wertes[i].toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €)`;
         
         legendItem.appendChild(legendColor);
         legendItem.appendChild(legendText);
@@ -368,7 +413,7 @@
           maintainAspectRatio: false,
           plugins: {
             legend: {
-              display: false // Standard-Legende deaktivieren
+              display: false
             },
             tooltip: {
               callbacks: {
