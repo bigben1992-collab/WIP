@@ -140,9 +140,7 @@
       <button id="btnTabGewinn" onclick="switchChartTab('gewinn')">Gewinnanteil (%)</button>
     </div>
     
-    <div id="noDataChartMsg" class="no-data-msg" style="display: none;">
-      Keine Daten für die gewählte Kategorie im ausgewählten Zeitraum vorhanden.
-    </div>
+    <div id="noDataChartMsg" class="no-data-msg" style="display: none;"></div>
 
     <div class="chart-container" id="chartWrapper">
       <canvas id="prozentChart"></canvas>
@@ -292,7 +290,6 @@
         } else if (currentChartMode === 'einkauf') {
           rawItems = aktuelleBilanzData.anteilEinkauf;
         } else if (currentChartMode === 'gewinn') {
-          // Gewinn pro Artikel aus Transaktionen berechnen (VK - EK)
           const gewinnMap = {};
           (aktuelleTransaktionen || []).forEach(t => {
             const artikelName = (t.artikel || "Unbekannt").trim().replace(/\s+/g, ' ');
@@ -314,29 +311,22 @@
         }
       }
 
-      // Prüfen, ob Daten vorhanden sind
-      if (!rawItems || rawItems.length === 0) {
-        if (chartInstance) chartInstance.destroy();
-        chartWrapper.style.display = "none";
-        legend.style.display = "none";
-        noDataMsg.style.display = "block";
-        return;
-      }
-
       // 1. Werte aufsummieren
       const groupedValues = {};
       let gesamtWert = 0;
 
-      rawItems.forEach(item => {
-        let rawName = item.artikel ? String(item.artikel) : "Unbekannt";
-        let cleanName = rawName.trim().replace(/\s+/g, ' '); 
-        const val = parseFloat(String(item.wert).replace(',', '.')) || 0;
+      if (rawItems && rawItems.length > 0) {
+        rawItems.forEach(item => {
+          let rawName = item.artikel ? String(item.artikel) : "Unbekannt";
+          let cleanName = rawName.trim().replace(/\s+/g, ' '); 
+          const val = parseFloat(String(item.wert).replace(',', '.')) || 0;
 
-        if (!groupedValues[cleanName]) {
-          groupedValues[cleanName] = 0;
-        }
-        groupedValues[cleanName] += val;
-      });
+          if (!groupedValues[cleanName]) {
+            groupedValues[cleanName] = 0;
+          }
+          groupedValues[cleanName] += val;
+        });
+      }
 
       // Beim Gewinndiagramm nur positive Gewinne berücksichtigen
       const labels = Object.keys(groupedValues).filter(label => {
@@ -347,13 +337,22 @@
         gesamtWert += groupedValues[label];
       });
 
+      // Mappings für dynamische Hinweistexte
+      const modeNames = {
+        lager: "Lagerwert / Kapital",
+        umsatz: "Umsatz",
+        einkauf: "Wareneinkauf",
+        gewinn: "Gewinn"
+      };
+
+      // Leere-Daten-Prüfung mit dynamischer Rückmeldung
       if (labels.length === 0 || gesamtWert <= 0) {
         if (chartInstance) chartInstance.destroy();
         chartWrapper.style.display = "none";
         legend.style.display = "none";
-        noDataMsg.innerText = currentChartMode === 'gewinn' 
-          ? "Kein positiver Rohgewinn im ausgewählten Zeitraum erzielt." 
-          : "Keine Daten für die gewählte Kategorie im ausgewählten Zeitraum vorhanden.";
+        
+        const aktuellerModusName = modeNames[currentChartMode] || "Daten";
+        noDataMsg.innerText = `Keine Einträge für ${aktuellerModusName} im ausgewählten Zeitraum vorhanden.`;
         noDataMsg.style.display = "block";
         return;
       }
@@ -412,9 +411,7 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: {
-              display: false
-            },
+            legend: { display: false },
             tooltip: {
               callbacks: {
                 label: function(context) {
