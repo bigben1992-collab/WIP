@@ -156,14 +156,9 @@
 
     /* Farbcodes für Nav-Links */
     .nav-home { --card-accent: #3b82f6; }
-    .nav-buchen { --card-accent: #10b981; }
-    .nav-artikel { --card-accent: #3b82f6; }
-    .nav-platz { --card-accent: #f59e0b; }
-    .nav-bestand { --card-accent: #8b5cf6; }
-    .nav-bilanz { --card-accent: #ec4899; }
-    .nav-verwaltung { --card-accent: #64748b; }
     .nav-umlagern { --card-accent: #d97706; }
     .nav-inventur { --card-accent: #dc2626; }
+    .nav-verwaltung { --card-accent: #64748b; }
 
     /* --- Formular-Card --- */
     .card { 
@@ -313,7 +308,7 @@
       display: flex; 
       gap: 10px; 
       margin-top: 16px; 
-    }
+    } 
     
     .btn-group button { 
       flex: 1; 
@@ -341,7 +336,7 @@
       <p>EK- und VK-Preise eines Artikels aktualisieren</p>
     </header>
 
-    <!-- Navigation als ausklappbares Akkordeon (ohne 'preise.html') -->
+    <!-- Navigation als ausklappbares Akkordeon (nur index, umlagern, inventur, verwaltung) -->
     <details class="nav-accordion">
       <summary class="nav-summary">
         <span>📍 Navigation / Modul wechseln</span>
@@ -349,11 +344,6 @@
       </summary>
       <nav class="nav-grid">
         <a href="index.html" class="nav-item nav-home"><span>🏠</span> Hauptmenü</a>
-        <a href="buchen.html" class="nav-item nav-buchen"><span>📦</span> Ware Buchen</a>
-        <a href="artikel.html" class="nav-item nav-artikel"><span>🔍</span> Artikelabfrage</a>
-        <a href="platz.html" class="nav-item nav-platz"><span>📍</span> Platzabfrage</a>
-        <a href="bestandsabfrage.html" class="nav-item nav-bestand"><span>📝</span> Bestandsabfrage</a>
-        <a href="bilanz.html" class="nav-item nav-bilanz"><span>📊</span> Bilanz</a>
         <a href="umlagern.html" class="nav-item nav-umlagern"><span>🔄</span> Umlagerung</a>
         <a href="inventur.html" class="nav-item nav-inventur"><span>📋</span> Inventur</a>
         <a href="verwaltung.html" class="nav-item nav-verwaltung"><span>⚙️</span> Verwaltung</a>
