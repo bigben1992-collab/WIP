@@ -42,20 +42,36 @@
       align-items: center;
     }
 
-    /* Logo Container */
+    /* Logo-Platzhalter Container */
     .logo-container {
       margin-bottom: 16px;
-      max-width: 320px;
+      max-width: 280px;
       width: 100%;
       display: flex;
       justify-content: center;
       align-items: center;
     }
 
+    /* Platzhalter-Styling (wird durch echtes <img> ersetzt) */
+    .logo-placeholder {
+      width: 100%;
+      height: 70px;
+      background: #ffffff;
+      border: 2px dashed #cbd5e1;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+
     .logo-container img {
       max-width: 100%;
       height: auto;
-      max-height: 90px;
+      max-height: 80px;
       object-fit: contain;
     }
 
@@ -191,8 +207,16 @@
 <body>
 
   <header class="header">
+    <!-- Platzhalter für das Logo -->
     <div class="logo-container">
-      <img src="6548.jpg" alt="Bens Buntes Business Logo">
+      <!-- 
+        SOBALD EIN LOGO VORHANDEN IST: 
+        Ersetzen Sie den div.logo-placeholder durch folgendes <img> Tag:
+        <img src="pfad/zu/ihrem-logo.png" alt="Firmenlogo">
+      -->
+      <div class="logo-placeholder">
+        [ Ihr Logo hier ]
+      </div>
     </div>
 
     <h1>Lagerverwaltung</h1>
@@ -251,5 +275,3 @@
 
 </body>
 </html>
-
-Folgendes logo soll im Platzhalter angezeigt sein
