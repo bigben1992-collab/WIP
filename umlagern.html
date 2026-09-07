@@ -3,47 +3,292 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#d97706">
+
   <title>Lager Beta - Umlagerung</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
+  
   <style>
-    /* Globales Design & Navigation */
-    body { font-family: sans-serif; margin: 15px; background: #f4f6f8; }
-    nav { background: #fff; padding: 10px; border-radius: 6px; margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
-    nav a { text-decoration: none; color: #2563eb; font-weight: bold; }
-    nav a.active { color: #1e40af; border-bottom: 2px solid #2563eb; }
+    :root {
+      --bg-color: #f1f5f9;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --primary: #d97706; /* Akzentfarbe für Umlagerung */
+      --primary-hover: #b45309;
+    }
 
-    .card { background: #fff; padding: 15px; border-radius: 6px; max-width: 500px; margin: 0 auto; }
-    #readerRelocate { width: 100%; max-width: 350px; margin: 0 auto 15px auto; }
-    input, button { width: 100%; padding: 10px; margin: 5px 0; box-sizing: border-box; }
-    button { background: #2563eb; color: #fff; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; }
-    button:disabled { background: #94a3b8; cursor: not-allowed; }
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body { 
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+      margin: 0; 
+      padding: 24px 16px; 
+      background: linear-gradient(135deg, #eef2ff 0%, #f1f5f9 50%, #f0fdf4 100%);
+      min-height: 100vh;
+      color: var(--text-main);
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* --- Header & Logo --- */
+    .header { 
+      text-align: center; 
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .logo-container {
+      margin-bottom: 16px;
+      max-width: 280px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .logo-placeholder {
+      width: 100%;
+      height: 70px;
+      background: #ffffff;
+      border: 2px dashed #cbd5e1;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+
+    .logo-container img {
+      max-width: 100%;
+      height: auto;
+      max-height: 80px;
+      object-fit: contain;
+    }
+
+    .header h1 {
+      margin: 0 0 6px 0;
+      font-size: 28px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #d97706, #b45309);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .header p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    /* --- Navigation Akkordeon --- */
+    .nav-accordion {
+      background: var(--card-bg);
+      border-radius: var(--radius-md);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+
+    .nav-summary {
+      padding: 12px 16px;
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-summary:hover {
+      background: #f8fafc;
+    }
+
+    .nav-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      padding: 12px 16px 16px 16px;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      color: var(--text-main);
+      font-weight: 600;
+      font-size: 14px;
+      border-left: 4px solid var(--card-accent, #3b82f6);
+      background: #f8fafc;
+      transition: all 0.2s ease;
+    }
+
+    .nav-item:hover {
+      background: #f1f5f9;
+      transform: translateX(2px);
+    }
+
+    /* Farbcodes für Nav-Links */
+    .nav-home { --card-accent: #3b82f6; }
+    .nav-preise { --card-accent: #0284c7; }
+    .nav-inventur { --card-accent: #dc2626; }
+    .nav-verwaltung { --card-accent: #64748b; }
+
+    /* --- Card & Formular-Styling --- */
+    .card { 
+      background: var(--card-bg); 
+      padding: 24px; 
+      border-radius: var(--radius-lg); 
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 5px;
+      background: var(--primary);
+    }
+
+    #readerRelocate { 
+      width: 100%; 
+      max-width: 350px; 
+      margin: 0 auto 15px auto; 
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      display: block;
+      margin-top: 12px;
+      margin-bottom: 4px;
+    }
+
+    input[type="text"], input[type="number"] { 
+      width: 100%; 
+      padding: 12px; 
+      border: 1px solid #cbd5e1; 
+      border-radius: var(--radius-sm); 
+      font-size: 15px; 
+      background: #f8fafc;
+      color: var(--text-main);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input[type="text"]:focus, input[type="number"]:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
+      background: #ffffff;
+    }
+
+    button { 
+      width: 100%; 
+      padding: 12px; 
+      margin-top: 16px; 
+      background: var(--primary); 
+      color: #fff; 
+      border: none; 
+      font-weight: 700; 
+      font-size: 15px;
+      border-radius: var(--radius-sm); 
+      cursor: pointer; 
+      transition: background 0.2s ease, transform 0.1s ease;
+    }
+
+    button:hover { 
+      background: var(--primary-hover); 
+    }
+
+    button:active {
+      transform: scale(0.99);
+    }
+
+    button:disabled { 
+      background: #94a3b8; 
+      cursor: not-allowed; 
+      transform: none;
+    }
+
+    .btn-blue { background: #2563eb; }
+    .btn-blue:hover { background: #1d4ed8; }
+
     .btn-cancel { background: #dc2626; }
-    #uStatus { margin-top: 10px; font-weight: bold; }
+    .btn-cancel:hover { background: #b91c1c; }
+
+    #uStatus { 
+      margin-top: 16px; 
+      font-weight: 600; 
+      font-size: 14px;
+      text-align: center;
+      padding: 10px;
+      border-radius: var(--radius-sm);
+    }
 
     /* Row Layout für Radio-Buttons & Inputs */
     .field-row {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin: 5px 0;
+      margin-top: 10px;
     }
-    .field-row input {
+
+    .field-row input[type="text"] {
       flex: 1;
       margin: 0;
     }
+
     .scan-radio-label {
       font-size: 13px;
-      font-weight: bold;
-      color: #1e40af;
+      font-weight: 700;
+      color: #b45309;
       white-space: nowrap;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 3px;
-      background: #eff6ff;
-      padding: 8px 10px;
-      border: 1px solid #bfdbfe;
-      border-radius: 4px;
+      gap: 4px;
+      background: #fef3c7;
+      padding: 11px 12px;
+      border: 1px solid #fde68a;
+      border-radius: var(--radius-sm);
+      user-select: none;
+      transition: background 0.2s ease;
+    }
+
+    .scan-radio-label:hover {
+      background: #fde68a;
     }
 
     /* Interaktive Lagerplatz-Tags */
@@ -51,23 +296,26 @@
       background: #f8fafc;
       border: 1px solid #e2e8f0;
       padding: 12px;
-      border-radius: 8px;
-      margin: 10px 0;
+      border-radius: var(--radius-md);
+      margin: 12px 0;
       display: none;
     }
+
     .stock-box-title {
       font-size: 12px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      color: #64748b;
+      color: var(--text-muted);
       margin-bottom: 8px;
     }
+
     .place-tags-container {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
     }
+
     .place-tag {
       display: inline-flex;
       align-items: center;
@@ -83,12 +331,14 @@
       transition: all 0.15s ease;
       box-shadow: 0 1px 2px rgba(0,0,0,0.03);
     }
+
     .place-tag:hover { 
       background: #0284c7; 
       color: #ffffff;
       border-color: #0284c7;
       transform: translateY(-1px);
     }
+
     .place-tag .badge-qty {
       background: #e0f2fe;
       color: #0369a1;
@@ -96,6 +346,7 @@
       padding: 2px 6px;
       border-radius: 10px;
     }
+
     .place-tag:hover .badge-qty {
       background: rgba(255, 255, 255, 0.25);
       color: #ffffff;
@@ -105,82 +356,133 @@
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
       display: none;
       align-items: center;
       justify-content: center;
       z-index: 1000;
     }
+
     .modal-box {
       background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      max-width: 320px;
+      padding: 24px;
+      border-radius: var(--radius-lg);
+      max-width: 360px;
       width: 90%;
       text-align: center;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     }
-    .modal-box h3 { margin-top: 0; }
+
+    .modal-box h3 { 
+      margin-top: 0; 
+      font-size: 18px;
+      color: var(--text-main);
+    }
+
     .confirm-code { 
       font-size: 18px; 
-      font-weight: bold; 
-      color: #2563eb; 
-      margin: 10px 0;
+      font-weight: 700; 
+      color: var(--primary); 
+      margin: 12px 0;
       word-break: break-all;
+      background: #f1f5f9;
+      padding: 8px;
+      border-radius: var(--radius-sm);
     }
-    .btn-group { display: flex; gap: 10px; margin-top: 15px; }
-    .btn-group button { flex: 1; }
+
+    .btn-group { 
+      display: flex; 
+      gap: 10px; 
+      margin-top: 16px; 
+    } 
+    
+    .btn-group button { 
+      flex: 1; 
+      margin-top: 0;
+    }
   </style>
 </head>
 <body>
-  <nav>
-    <a href="index.html">🏠 Menü</a> | 
-    <a href="preise.html">Preise</a> | 
-    <a href="inventur.html">Inventur</a> | 
-    <a href="verwaltung.html">⚙️ Verwaltung</a>
-  </nav>
 
-  <div class="card">
-    <h3>🔄 Umlagerung (Intern)</h3>
+  <div class="container">
 
-    <div id="readerRelocate"></div>
-
-    <form id="relocateForm" onsubmit="confirmAndSubmitRelocation(event)">
-      <!-- Barcode Feld + Scan Target -->
-      <div class="field-row">
-        <input type="text" id="uBarcode" placeholder="Barcode scannen / eingeben" required autofocus>
-        <label class="scan-radio-label">
-          <input type="radio" name="scanTargetRelocate" value="barcode" checked> 📦 Scan
-        </label>
+    <!-- Header mit Logo -->
+    <header class="header">
+      <div class="logo-container">
+        <!-- 
+          SOBALD EIN LOGO VORHANDEN IST: 
+          Ersetzen Sie den div.logo-placeholder durch folgendes <img> Tag:
+          <img src="pfad/zu/ihrem-logo.png" alt="Firmenlogo">
+        -->
+        <div class="logo-placeholder">
+          [ Ihr Logo hier ]
+        </div>
       </div>
+      <h1>Umlagerung</h1>
+      <p>Bestände intern zwischen Lagerplätzen verschieben</p>
+    </header>
 
-      <!-- Lagerplätze Anzeige / Auswahl -->
-      <div id="stockLocationBox">
-        <div id="articleTitle" class="stock-box-title">📍 Vorhandene Lagerplätze (Klick zum Auswählen):</div>
-        <div id="stockList" class="place-tags-container"></div>
-      </div>
+    <!-- Navigation als ausklappbares Akkordeon (ohne 'umlagern.html') -->
+    <details class="nav-accordion">
+      <summary class="nav-summary">
+        <span>📍 Navigation / Modul wechseln</span>
+        <small style="color: var(--text-muted); font-weight: normal;">Einklappen/Ausklappen</small>
+      </summary>
+      <nav class="nav-grid">
+        <a href="index.html" class="nav-item nav-home"><span>🏠</span> Hauptmenü</a>
+        <a href="preise.html" class="nav-item nav-preise"><span>💶</span> Preise anpassen</a>
+        <a href="inventur.html" class="nav-item nav-inventur"><span>📋</span> Inventur</a>
+        <a href="verwaltung.html" class="nav-item nav-verwaltung"><span>⚙️</span> Verwaltung</a>
+      </nav>
+    </details>
 
-      <!-- Von Lagerplatz Feld + Scan Target -->
-      <div class="field-row">
-        <input type="text" id="uVon" placeholder="Von Platz (z.B. A1)" required>
-        <label class="scan-radio-label">
-          <input type="radio" name="scanTargetRelocate" value="von"> 📍 Von
-        </label>
-      </div>
+    <main class="card">
+      <div id="readerRelocate"></div>
 
-      <!-- Nach Lagerplatz Feld + Scan Target -->
-      <div class="field-row">
-        <input type="text" id="uNach" placeholder="Nach Platz (z.B. B2)" required>
-        <label class="scan-radio-label">
-          <input type="radio" name="scanTargetRelocate" value="nach"> 📍 Nach
-        </label>
-      </div>
+      <form id="relocateForm" onsubmit="confirmAndSubmitRelocation(event)">
+        <!-- Barcode Feld + Scan Target -->
+        <label for="uBarcode">Artikel-Barcode:</label>
+        <div class="field-row">
+          <input type="text" id="uBarcode" placeholder="Barcode scannen / eingeben" required autofocus>
+          <label class="scan-radio-label">
+            <input type="radio" name="scanTargetRelocate" value="barcode" checked> 📦 Scan
+          </label>
+        </div>
 
-      <input type="number" id="uMenge" placeholder="Menge" value="1" min="1" required>
-      <button type="submit" id="submitBtn">Umlagern</button>
-    </form>
+        <!-- Lagerplätze Anzeige / Auswahl -->
+        <div id="stockLocationBox">
+          <div id="articleTitle" class="stock-box-title">📍 Vorhandene Lagerplätze (Klick zum Auswählen):</div>
+          <div id="stockList" class="place-tags-container"></div>
+        </div>
 
-    <div id="uStatus"></div>
+        <!-- Von Lagerplatz Feld + Scan Target -->
+        <label for="uVon">Von Platz:</label>
+        <div class="field-row">
+          <input type="text" id="uVon" placeholder="Von Platz (z.B. A1)" required>
+          <label class="scan-radio-label">
+            <input type="radio" name="scanTargetRelocate" value="von"> 📍 Von
+          </label>
+        </div>
+
+        <!-- Nach Lagerplatz Feld + Scan Target -->
+        <label for="uNach">Nach Platz:</label>
+        <div class="field-row">
+          <input type="text" id="uNach" placeholder="Nach Platz (z.B. B2)" required>
+          <label class="scan-radio-label">
+            <input type="radio" name="scanTargetRelocate" value="nach"> 📍 Nach
+          </label>
+        </div>
+
+        <label for="uMenge">Menge:</label>
+        <input type="number" id="uMenge" placeholder="Menge" value="1" min="1" required>
+
+        <button type="submit" id="submitBtn">Umlagern</button>
+      </form>
+
+      <div id="uStatus"></div>
+    </main>
+
   </div>
 
   <!-- Bestätigungs-Modal -->
@@ -190,8 +492,8 @@
       <p id="modalTargetText"></p>
       <div id="modalCode" class="confirm-code"></div>
       <div class="btn-group">
-        <button onclick="acceptScanCode()">✅ Übernehmen</button>
-        <button class="btn-cancel" onclick="rejectScanCode()">❌ Abbrechen</button>
+        <button type="button" class="btn-blue" onclick="acceptScanCode()">✅ Übernehmen</button>
+        <button type="button" class="btn-cancel" onclick="rejectScanCode()">❌ Abbrechen</button>
       </div>
     </div>
   </div>
