@@ -7,9 +7,14 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#4f46e5">
+  <meta name="theme-color" content="#ec4899">
+
+  <title>Lager Beta - Bilanz & Auswertung</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
-  <title>Lager Beta - Hauptmenü</title>
   <style>
     :root {
       --bg-color: #f1f5f9;
@@ -18,6 +23,8 @@
       --text-muted: #64748b;
       --radius-lg: 16px;
       --radius-md: 12px;
+      --radius-sm: 8px;
+      --primary: #ec4899; /* Akzentfarbe für Bilanz */
     }
 
     *, *::before, *::after {
@@ -33,16 +40,20 @@
       color: var(--text-main);
     }
 
-    /* --- Logo & Header Bereich --- */
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    /* --- Header & Logo --- */
     .header { 
       text-align: center; 
-      margin-bottom: 36px;
+      margin-bottom: 24px;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
 
-    /* Logo-Platzhalter Container */
     .logo-container {
       margin-bottom: 16px;
       max-width: 280px;
@@ -52,7 +63,6 @@
       align-items: center;
     }
 
-    /* Platzhalter-Styling (wird durch echtes <img> ersetzt) */
     .logo-placeholder {
       width: 100%;
       height: 70px;
@@ -77,201 +87,676 @@
 
     .header h1 {
       margin: 0 0 6px 0;
-      font-size: 32px;
+      font-size: 28px;
       font-weight: 800;
-      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      background: linear-gradient(135deg, #ec4899, #8b5cf6);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       letter-spacing: -0.5px;
     }
 
-    .header p {
-      margin: 0;
-      color: var(--text-muted);
-      font-size: 15px;
-      font-weight: 500;
-    }
-
-    /* --- Grid & Cards Layout --- */
-    .grid-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 20px;
-      max-width: 960px;
-      margin: 0 auto;
-    }
-
-    .menu-card {
+    /* --- Navigation Dropdown/Akkordeon --- */
+    .nav-accordion {
       background: var(--card-bg);
-      padding: 24px 20px;
-      border-radius: var(--radius-lg);
+      border-radius: var(--radius-md);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+
+    .nav-summary {
+      padding: 12px 16px;
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-summary:hover {
+      background: #f8fafc;
+    }
+
+    .nav-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      padding: 12px 16px 16px 16px;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
       text-decoration: none;
       color: var(--text-main);
+      font-weight: 600;
+      font-size: 14px;
+      border-left: 4px solid var(--card-accent, #3b82f6);
+      background: #f8fafc;
+      transition: all 0.2s ease;
+    }
+
+    .nav-item:hover {
+      background: #f1f5f9;
+      transform: translateX(2px);
+    }
+
+    /* Farbcodes für Nav-Links */
+    .nav-home { --card-accent: #3b82f6; }
+    .nav-buchen { --card-accent: #10b981; }
+    .nav-artikel { --card-accent: #3b82f6; }
+    .nav-platz { --card-accent: #f59e0b; }
+    .nav-bestand { --card-accent: #8b5cf6; }
+    .nav-verwaltung { --card-accent: #64748b; }
+
+    /* --- Karten Layout --- */
+    .card { 
+      background: var(--card-bg); 
+      padding: 24px; 
+      border-radius: var(--radius-lg); 
+      margin-bottom: 24px; 
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      border: 1px solid rgba(226, 232, 240, 0.8);
       position: relative;
       overflow: hidden;
-      border: 1px solid rgba(226, 232, 240, 0.8);
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* Akzentleiste am oberen Kartenrand */
-    .menu-card::before {
+    .card::before {
       content: '';
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 5px;
-      background: var(--card-accent, #3b82f6);
-      transition: height 0.2s ease;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: var(--primary);
     }
 
-    .menu-card:hover, .menu-card:focus-visible {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+    .card h2, .card h3 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      color: var(--text-main);
+    }
+
+    /* Kamera Container */
+    #scannerWrapper { 
+      display: none; 
+      margin-bottom: 15px; 
+      background: #f8fafc; 
+      padding: 12px; 
+      border-radius: var(--radius-md); 
+      border: 2px dashed var(--primary); 
+    }
+    #reader { width: 100%; max-width: 320px; margin: 0 auto; }
+
+    /* Formularelemente */
+    label { font-size: 13px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 6px; }
+    input { 
+      width: 100%; 
+      padding: 10px 12px; 
+      margin-bottom: 12px; 
+      box-sizing: border-box; 
+      border: 1px solid #cbd5e1; 
+      border-radius: var(--radius-sm); 
+      font-family: inherit; 
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    input:focus {
       outline: none;
+      border-color: var(--primary);
     }
-
-    .menu-card:hover::before {
-      height: 7px;
+    
+    .input-with-btn { display: flex; gap: 8px; align-items: center; }
+    .input-with-btn input { margin-bottom: 0; }
+    
+    .btn-cam { 
+      padding: 10px 14px; 
+      background: #475569; 
+      color: white; 
+      border: none; 
+      border-radius: var(--radius-sm); 
+      cursor: pointer; 
+      flex-shrink: 0; 
+      font-size: 16px;
+      transition: background 0.2s;
     }
+    .btn-cam:hover { background: #334155; }
 
-    /* Icon-Styling mit sanftem Hintergrund-Badge */
-    .icon-wrapper {
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      background: var(--icon-bg, #eff6ff);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 14px;
-      transition: transform 0.25s ease;
-    }
-
-    .menu-card:hover .icon-wrapper {
-      transform: scale(1.1) rotate(3deg);
-    }
-
-    .menu-icon { 
-      font-size: 28px; 
-      line-height: 1;
-    }
-
-    .menu-title { 
+    .filter-box { display: flex; flex-wrap: wrap; gap: 12px; }
+    .filter-group { flex: 1; min-width: 140px; }
+    
+    .button-group { display: flex; gap: 12px; margin-top: 16px; }
+    
+    button { 
+      flex: 1; 
+      padding: 12px; 
+      background: #3b82f6; 
+      color: #fff; 
+      border: none; 
       font-weight: 700; 
-      font-size: 18px; 
+      border-radius: var(--radius-sm); 
+      cursor: pointer; 
+      transition: background 0.2s, transform 0.1s; 
+      font-size: 14px;
+    }
+    button:hover { background: #2563eb; }
+    button:active { transform: scale(0.99); }
+    button:disabled { background: #94a3b8; cursor: not-allowed; }
+    
+    button.btn-pdf { background: #10b981; }
+    button.btn-pdf:hover { background: #059669; }
+    
+    /* Metriken */
+    .results { margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+    .metric { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
+    .metric-title { font-weight: 600; color: var(--text-muted); }
+    .highlight { font-size: 1.1em; color: #10b981; font-weight: 700; }
+    .negative { font-size: 1.1em; color: #ef4444; font-weight: 700; }
+
+    /* Chart Styles */
+    .chart-btn-group { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+    .chart-btn-group button { 
+      flex: none; 
+      padding: 8px 14px; 
+      background: #f1f5f9; 
       color: var(--text-main); 
-      margin: 0;
-      text-align: center;
+      border: 1px solid #cbd5e1; 
+      font-size: 13px; 
+      border-radius: 20px;
     }
+    .chart-btn-group button.active { background: var(--primary); color: white; border-color: var(--primary); }
+    .chart-container { position: relative; max-width: 450px; margin: 0 auto; height: 280px; }
 
-    .menu-desc { 
-      font-size: 13.5px; 
-      color: var(--text-muted); 
-      text-align: center; 
-      margin: 6px 0 0 0; 
-      line-height: 1.4;
-    }
+    .no-data-msg { text-align: center; color: var(--text-muted); font-style: italic; padding: 20px 0; }
 
-    /* --- Individuelle Farbschemata pro Modul --- */
-    .card-buchen {
-      --card-accent: #10b981;
-      --icon-bg: #ecfdf5;
-    }
-    .card-artikel {
-      --card-accent: #3b82f6;
-      --icon-bg: #eff6ff;
-    }
-    .card-platz {
-      --card-accent: #f59e0b;
-      --icon-bg: #fffbeb;
-    }
-    .card-bestand {
-      --card-accent: #8b5cf6;
-      --icon-bg: #f5f3ff;
-    }
-    .card-bilanz {
-      --card-accent: #ec4899;
-      --icon-bg: #fdf2f8;
-    }
-    .card-verwaltung {
-      --card-accent: #64748b;
-      --icon-bg: #f8fafc;
-    }
+    /* Benutzerdefinierte Legende */
+    .chart-legend { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; padding: 12px; border: 1px solid #e2e8f0; border-radius: var(--radius-md); background-color: #f8fafc; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13.5px; }
+    .legend-color { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; }
+
+    /* Tabelle */
+    .table-container { overflow-x: auto; margin-top: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
+    th { background-color: #f8fafc; color: var(--text-muted); font-weight: 700; }
+    .badge-ek { background: #dbeafe; color: #1e40af; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; }
+    .badge-vk { background: #dcfce7; color: #166534; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; }
   </style>
 </head>
 <body>
 
-  <header class="header">
-    <!-- Platzhalter für das Logo -->
-    <div class="logo-container">
-      <!-- 
-        SOBALD EIN LOGO VORHANDEN IST: 
-        Ersetzen Sie den div.logo-placeholder durch folgendes <img> Tag:
-        <img src="pfad/zu/ihrem-logo.png" alt="Firmenlogo">
-      -->
-      <div class="logo-placeholder">
-        [ Ihr Logo hier ]
+  <div class="container">
+    
+    <!-- Header mit Logo -->
+    <header class="header">
+      <div class="logo-container">
+        <!-- 
+          SOBALD EIN LOGO VORHANDEN IST: 
+          Ersetzen Sie den div.logo-placeholder durch folgendes <img> Tag:
+          <img src="pfad/zu/ihrem-logo.png" alt="Firmenlogo">
+        -->
+        <div class="logo-placeholder">
+          [ Ihr Logo hier ]
+        </div>
+      </div>
+      <h1>Bilanz & Auswertung</h1>
+    </header>
+
+    <!-- Navigation als ausklappbares Akkordeon (ohne den Punkt 'Bilanz') -->
+    <details class="nav-accordion">
+      <summary class="nav-summary">
+        <span>📍 Navigation / Modul wechseln</span>
+        <small style="color: var(--text-muted); font-weight: normal;">Einklappen/Ausklappen</small>
+      </summary>
+      <nav class="nav-grid">
+        <a href="index.html" class="nav-item nav-home"><span>🏠</span> Hauptmenü</a>
+        <a href="buchen.html" class="nav-item nav-buchen"><span>📦</span> Ware Buchen</a>
+        <a href="artikel.html" class="nav-item nav-artikel"><span>🔍</span> Artikelabfrage</a>
+        <a href="platz.html" class="nav-item nav-platz"><span>📍</span> Platzabfrage</a>
+        <a href="bestandsabfrage.html" class="nav-item nav-bestand"><span>📝</span> Bestandsabfrage</a>
+        <a href="verwaltung.html" class="nav-item nav-verwaltung"><span>⚙️</span> Verwaltung</a>
+      </nav>
+    </details>
+
+    <div class="card">
+      <h2>Finanzbilanz</h2>
+
+      <div id="scannerWrapper">
+        <div id="reader"></div>
+      </div>
+
+      <div class="filter-box">
+        <div class="filter-group">
+          <label for="vonDatum">Von Datum:</label>
+          <input type="date" id="vonDatum">
+        </div>
+        <div class="filter-group">
+          <label for="bisDatum">Bis Datum:</label>
+          <input type="date" id="bisDatum">
+        </div>
+        <div class="filter-group" style="flex: 100%;">
+          <label for="artikelFilter">Artikel / Barcode (optional):</label>
+          <div class="input-with-btn">
+            <input type="text" id="artikelFilter" placeholder="z. B. Barcode oder Artikelname">
+            <button type="button" class="btn-cam" onclick="toggleScanner()" title="Kamera-Scanner öffnen">📷</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button id="btnBerechnen" onclick="ladeBilanz()">Bilanz berechnen</button>
+        <button id="btnPdf" class="btn-pdf" onclick="exportPDF()" disabled>📄 PDF Export</button>
+      </div>
+
+      <div class="results">
+        <div class="metric">
+          <span class="metric-title">Wareneinkauf (EK):</span>
+          <span id="wareneinsatz">0.00 €</span>
+        </div>
+        <div class="metric">
+          <span class="metric-title">Umsatz (VK):</span>
+          <span id="umsatz">0.00 €</span>
+        </div>
+        <div class="metric">
+          <span class="metric-title">Rohgewinn:</span>
+          <span id="rohgewinn" class="highlight">0.00 €</span>
+        </div>
+        <div class="metric">
+          <span class="metric-title" id="lbl-lagerwert">Aktueller Lagerwert (EK):</span>
+          <span id="lagerwert">0.00 €</span>
+        </div>
+        <div class="metric">
+          <span class="metric-title" id="lbl-lagerwertVK">Aktueller Lagerwert (VK):</span>
+          <span id="lagerwertVK">0.00 €</span>
+        </div>
       </div>
     </div>
 
-    <h1>Lagerverwaltung</h1>
-    <p>Bitte wählen Sie ein Modul aus:</p>
-  </header>
-
-  <main class="grid-container">
-    <a href="buchen.html" class="menu-card card-buchen">
-      <div class="icon-wrapper">
-        <span class="menu-icon" role="img" aria-label="Paket">📦</span>
+    <div class="card" id="chartCard">
+      <h3>Prozentuale Verteilung</h3>
+      <div class="chart-btn-group">
+        <button id="btnTabLager" class="active" onclick="switchChartTab('lager')">Lagerwert / Kapital (%)</button>
+        <button id="btnTabUmsatz" onclick="switchChartTab('umsatz')">Umsatzanteil (%)</button>
+        <button id="btnTabEinkauf" onclick="switchChartTab('einkauf')">Wareneinkauf (%)</button>
+        <button id="btnTabGewinn" onclick="switchChartTab('gewinn')">Gewinnanteil (%)</button>
       </div>
-      <h2 class="menu-title">Ware Buchen</h2>
-      <p class="menu-desc">Einkäufe (EK) und Verkäufe (VK) erfassen</p>
-    </a>
+      
+      <div id="noDataChartMsg" class="no-data-msg" style="display: none;"></div>
 
-    <a href="artikel.html" class="menu-card card-artikel">
-      <div class="icon-wrapper">
-        <span class="menu-icon" role="img" aria-label="Lupe">🔍</span>
+      <div class="chart-container" id="chartWrapper">
+        <canvas id="prozentChart"></canvas>
       </div>
-      <h2 class="menu-title">Artikelabfrage & Etikettendruck</h2>
-      <p class="menu-desc">Artikelbestände prüfen und Etiketten drucken</p>
-    </a>
+      <div id="chartLegend" class="chart-legend" style="display: none;"></div>
+    </div>
 
-    <a href="platz.html" class="menu-card card-platz">
-      <div class="icon-wrapper">
-        <span class="menu-icon" role="img" aria-label="Standort-Pin">📍</span>
+    <div class="card" id="transaktionenCard" style="display: none;">
+      <h3>Einzeltransaktionen im Zeitraum</h3>
+      <div class="table-container">
+        <table id="transaktionenTabelle">
+          <thead>
+            <tr>
+              <th>Datum</th>
+              <th>Typ</th>
+              <th>Artikel / Barcode</th>
+              <th>Menge</th>
+              <th>Einzelpreis</th>
+              <th>Gesamt</th>
+            </tr>
+          </thead>
+          <tbody id="transaktionenBody">
+          </tbody>
+        </table>
       </div>
-      <h2 class="menu-title">Platzabfrage</h2>
-      <p class="menu-desc">Inhalt einzelner Lagerplätze abrufen</p>
-    </a>
+    </div>
 
-    <a href="bestandsabfrage.html" class="menu-card card-bestand">
-      <div class="icon-wrapper">
-        <span class="menu-icon" role="img" aria-label="Klemmbrett">📝</span>
-      </div>
-      <h2 class="menu-title">Bestandsabfrage</h2>
-      <p class="menu-desc">Warenbestände / Einkaufslisten</p>
-    </a>
+  </div>
+
+  <script>
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwp9yMSa_6WerEL7CIUmDyKdH9G73DZVgbOFmjMQZrxf8IWSEPAbY-mrOlAZT6BoG7P/exec";
+
+    let aktuelleTransaktionen = [];
+    let aktuelleBilanzData = null;
+    let html5QrcodeScanner = null;
+    let isScannerActive = false;
     
-    <a href="bilanz.html" class="menu-card card-bilanz">
-      <div class="icon-wrapper">
-        <span class="menu-icon" role="img" aria-label="Diagramm">📊</span>
-      </div>
-      <h2 class="menu-title">Bilanz</h2>
-      <p class="menu-desc">Finanzübersichten und Lagerwerte einsehen</p>
-    </a>
+    let chartInstance = null;
+    let currentChartMode = 'lager';
 
-    <a href="verwaltung.html" class="menu-card card-verwaltung">
-      <div class="icon-wrapper">
-        <span class="menu-icon" role="img" aria-label="Zahnrad">⚙️</span>
-      </div>
-      <h2 class="menu-title">Verwaltung</h2>
-      <p class="menu-desc">Umlagerungen und Bestandsanpassungen</p>
-    </a>
-  </main>
+    function toggleScanner() {
+      const wrapper = document.getElementById("scannerWrapper");
+      if (!isScannerActive) {
+        wrapper.style.display = "block";
+        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 200 });
+        html5QrcodeScanner.render((text) => {
+          document.getElementById('artikelFilter').value = text;
+          toggleScanner();
+          ladeBilanz();
+        });
+        isScannerActive = true;
+      } else {
+        if (html5QrcodeScanner) {
+          html5QrcodeScanner.clear();
+        }
+        wrapper.style.display = "none";
+        isScannerActive = false;
+      }
+    }
+
+    document.getElementById("artikelFilter").addEventListener("keypress", function(e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        ladeBilanz();
+      }
+    });
+
+    async function ladeBilanz() {
+      const von = document.getElementById("vonDatum").value;
+      const bis = document.getElementById("bisDatum").value;
+      const artikel = document.getElementById("artikelFilter").value;
+      const btn = document.getElementById("btnBerechnen");
+      const btnPdf = document.getElementById("btnPdf");
+
+      if (von && bis && von > bis) {
+        alert("Das 'Von'-Datum darf nicht nach dem 'Bis'-Datum liegen.");
+        return;
+      }
+
+      const originalBtnText = btn.innerText;
+      btn.disabled = true;
+      btn.innerText = "Berechne...";
+      btnPdf.disabled = true;
+
+      const url = `${WEB_APP_URL}?action=getFinance&von=${encodeURIComponent(von)}&bis=${encodeURIComponent(bis)}&artikel=${encodeURIComponent(artikel)}`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.status === "success" && data.data) {
+          aktuelleBilanzData = data.data;
+          aktuelleTransaktionen = data.data.transaktionen || [];
+
+          document.getElementById("wareneinsatz").innerText = `${data.data.wareneinsatzEK ?? "0.00"} €`;
+          document.getElementById("umsatz").innerText = `${data.data.umsatzVK ?? "0.00"} €`;
+
+          const rohgewinnEl = document.getElementById("rohgewinn");
+          const rohGewinnRaw = (data.data.rohgewinn ?? "0").toString().replace(',', '.');
+          const rohgewinnWert = parseFloat(rohGewinnRaw) || 0;
+
+          rohgewinnEl.innerText = `${data.data.rohgewinn ?? "0.00"} €`;
+          rohgewinnEl.className = rohgewinnWert < 0 ? "negative" : "highlight";
+
+          const isHist = Boolean(data.data.isHistorisch);
+          document.getElementById("lbl-lagerwert").innerText = isHist ? "Lagerwert EK (zum Stichtag):" : "Aktueller Lagerwert (EK):";
+          document.getElementById("lbl-lagerwertVK").innerText = isHist ? "Lagerwert VK (zum Stichtag):" : "Aktueller Lagerwert (VK):";
+
+          document.getElementById("lagerwert").innerText = `${data.data.lagerwert ?? "0.00"} €`;
+          document.getElementById("lagerwertVK").innerText = `${data.data.lagerwertVK ?? "0.00"} €`;
+
+          rendereTransaktionen(aktuelleTransaktionen);
+          renderChart();
+          
+          btnPdf.disabled = false;
+        } else {
+          alert("Fehler beim Abrufen der Bilanz: " + (data.message || "Unbekannter Fehler"));
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Netzwerkfehler beim Abrufen der Daten.");
+      } finally {
+        btn.disabled = false;
+        btn.innerText = originalBtnText;
+      }
+    }
+
+    function switchChartTab(mode) {
+      currentChartMode = mode;
+      document.getElementById('btnTabLager').classList.toggle('active', mode === 'lager');
+      document.getElementById('btnTabUmsatz').classList.toggle('active', mode === 'umsatz');
+      document.getElementById('btnTabEinkauf').classList.toggle('active', mode === 'einkauf');
+      document.getElementById('btnTabGewinn').classList.toggle('active', mode === 'gewinn');
+      renderChart();
+    }
+
+    function renderChart() {
+      const legend = document.getElementById("chartLegend");
+      const chartWrapper = document.getElementById("chartWrapper");
+      const noDataMsg = document.getElementById("noDataChartMsg");
+
+      let rawItems = [];
+      
+      if (aktuelleBilanzData) {
+        if (currentChartMode === 'lager') {
+          rawItems = aktuelleBilanzData.anteilLagerwert;
+        } else if (currentChartMode === 'umsatz') {
+          rawItems = aktuelleBilanzData.anteilUmsatz;
+        } else if (currentChartMode === 'einkauf') {
+          rawItems = aktuelleBilanzData.anteilEinkauf;
+        } else if (currentChartMode === 'gewinn') {
+          const gewinnMap = {};
+          (aktuelleTransaktionen || []).forEach(t => {
+            const artikelName = (t.artikel || "Unbekannt").trim().replace(/\s+/g, ' ');
+            const gesamtVal = parseFloat(String(t.gesamt).replace(',', '.')) || 0;
+            
+            if (!gewinnMap[artikelName]) gewinnMap[artikelName] = 0;
+            
+            if (t.typ === "VK") {
+              gewinnMap[artikelName] += gesamtVal;
+            } else if (t.typ === "EK") {
+              gewinnMap[artikelName] -= gesamtVal;
+            }
+          });
+
+          rawItems = Object.keys(gewinnMap).map(key => ({
+            artikel: key,
+            wert: gewinnMap[key]
+          }));
+        }
+      }
+
+      const groupedValues = {};
+      let gesamtWert = 0;
+
+      if (rawItems && rawItems.length > 0) {
+        rawItems.forEach(item => {
+          let rawName = item.artikel ? String(item.artikel) : "Unbekannt";
+          let cleanName = rawName.trim().replace(/\s+/g, ' '); 
+          const val = parseFloat(String(item.wert).replace(',', '.')) || 0;
+
+          if (!groupedValues[cleanName]) {
+            groupedValues[cleanName] = 0;
+          }
+          groupedValues[cleanName] += val;
+        });
+      }
+
+      const labels = Object.keys(groupedValues).filter(label => {
+        return currentChartMode === 'gewinn' ? groupedValues[label] > 0 : groupedValues[label] >= 0;
+      });
+
+      labels.forEach(label => {
+        gesamtWert += groupedValues[label];
+      });
+
+      const modeNames = {
+        lager: "Lagerwert / Kapital",
+        umsatz: "Umsatz",
+        einkauf: "Wareneinkauf",
+        gewinn: "Gewinn"
+      };
+
+      if (labels.length === 0 || gesamtWert <= 0) {
+        if (chartInstance) chartInstance.destroy();
+        chartWrapper.style.display = "none";
+        legend.style.display = "none";
+        
+        const aktuellerModusName = modeNames[currentChartMode] || "Daten";
+        noDataMsg.innerText = `Keine Einträge für ${aktuellerModusName} im ausgewählten Zeitraum vorhanden.`;
+        noDataMsg.style.display = "block";
+        return;
+      }
+
+      noDataMsg.style.display = "none";
+      chartWrapper.style.display = "block";
+
+      const wertes = labels.map(label => groupedValues[label]);
+      const values = labels.map(label => {
+        return gesamtWert > 0 ? ((groupedValues[label] / gesamtWert) * 100).toFixed(2) : 0;
+      });
+
+      const colors = labels.map((_, i) => {
+        const hue = (i * 137.5) % 360; 
+        return `hsl(${hue}, 65%, 50%)`;
+      });
+
+      legend.style.display = "flex";
+      legend.innerHTML = ""; 
+
+      labels.forEach((label, i) => {
+        const legendItem = document.createElement("div");
+        legendItem.className = "legend-item";
+        
+        const legendColor = document.createElement("div");
+        legendColor.className = "legend-color";
+        legendColor.style.backgroundColor = colors[i];
+        
+        const legendText = document.createElement("span");
+        legendText.innerText = `${label} (${values[i]}% | ${wertes[i].toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €)`;
+        
+        legendItem.appendChild(legendColor);
+        legendItem.appendChild(legendText);
+        legend.appendChild(legendItem);
+      });
+
+      const ctx = document.getElementById('prozentChart').getContext('2d');
+
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: values,
+            backgroundColor: colors
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const idx = context.dataIndex;
+                  const euroFormatted = wertes[idx].toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                  return `${context.label}: ${values[idx]}% (${euroFormatted} €)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function rendereTransaktionen(liste) {
+      const card = document.getElementById("transaktionenCard");
+      const tbody = document.getElementById("transaktionenBody");
+      tbody.innerHTML = "";
+
+      if (!liste || liste.length === 0) {
+        card.style.display = "none";
+        return;
+      }
+
+      liste.forEach(t => {
+        const tr = document.createElement("tr");
+        const badgeClass = t.typ === "EK" ? "badge-ek" : "badge-vk";
+        
+        tr.innerHTML = `
+          <td>${t.datum}</td>
+          <td><span class="${badgeClass}">${t.typ}</span></td>
+          <td>${t.artikel}</td>
+          <td>${t.menge}</td>
+          <td>${t.einzelpreis} €</td>
+          <td><strong>${t.gesamt} €</strong></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      card.style.display = "block";
+    }
+
+    function exportPDF() {
+      if (!aktuelleBilanzData) return;
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      doc.setFontSize(18);
+      doc.text("Lager Beta - Finanzbilanz", 14, 20);
+
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      const vonStr = document.getElementById("vonDatum").value || "Anfang";
+      const bisStr = document.getElementById("bisDatum").value || "Heute";
+      const filterStr = document.getElementById("artikelFilter").value;
+      
+      let subtext = `Zeitraum: ${vonStr} bis ${bisStr}`;
+      if (filterStr) subtext += ` | Filter: ${filterStr}`;
+      doc.text(subtext, 14, 27);
+
+      const summaryRows = [
+        ["Wareneinkauf (EK):", `${aktuelleBilanzData.wareneinsatzEK ?? "0.00"} EUR`],
+        ["Umsatz (VK):", `${aktuelleBilanzData.umsatzVK ?? "0.00"} EUR`],
+        ["Rohgewinn:", `${aktuelleBilanzData.rohgewinn ?? "0.00"} EUR`],
+        [document.getElementById("lbl-lagerwert").innerText, `${aktuelleBilanzData.lagerwert ?? "0.00"} EUR`],
+        [document.getElementById("lbl-lagerwertVK").innerText, `${aktuelleBilanzData.lagerwertVK ?? "0.00"} EUR`]
+      ];
+
+      doc.autoTable({
+        startY: 32,
+        head: [["Kennzahl", "Wert"]],
+        body: summaryRows,
+        theme: "striped",
+        headStyles: { fillColor: [236, 72, 153] }
+      });
+
+      if (aktuelleTransaktionen.length > 0) {
+        const tableBody = aktuelleTransaktionen.map(t => [
+          t.datum,
+          t.typ,
+          t.artikel,
+          t.menge,
+          `${t.einzelpreis} EUR`,
+          `${t.gesamt} EUR`
+        ]);
+
+        doc.text("Einzeltransaktionen", 14, doc.lastAutoTable.finalY + 12);
+
+        doc.autoTable({
+          startY: doc.lastAutoTable.finalY + 16,
+          head: [["Datum", "Typ", "Artikel", "Menge", "Einzelpreis", "Gesamt"]],
+          body: tableBody,
+          theme: "grid",
+          headStyles: { fillColor: [139, 92, 246] }
+        });
+      }
+
+      doc.save(`Finanzbilanz_${vonStr}_bis_${bisStr}.pdf`);
+    }
+
+    window.onload = ladeBilanz;
+  </script>
 
 </body>
 </html>
