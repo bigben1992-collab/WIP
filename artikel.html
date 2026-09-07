@@ -44,6 +44,45 @@
       color: var(--text-main);
     }
 
+    /* --- Logo & Header Bereich --- */
+    .header { 
+      text-align: center; 
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .logo-container {
+      max-width: 240px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .logo-placeholder {
+      width: 100%;
+      height: 60px;
+      background: #ffffff;
+      border: 2px dashed #cbd5e1;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+
+    .logo-container img {
+      max-width: 100%;
+      height: auto;
+      max-height: 70px;
+      object-fit: contain;
+    }
+
     /* --- Navigation --- */
     nav { 
       background: rgba(255, 255, 255, 0.95);
@@ -54,6 +93,7 @@
       display: flex; 
       gap: 8px; 
       flex-wrap: wrap; 
+      justify-content: center;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
       border: 1px solid rgba(226, 232, 240, 0.8);
       max-width: 960px;
@@ -84,7 +124,6 @@
     /* Modul-spezifisches Farbmapping für die Nav-Links */
     nav a.nav-home { color: #475569; }
     nav a.nav-buchen:hover { background: #ecfdf5; border-color: #10b981; color: #047857; }
-    nav a.nav-artikel { background: var(--module-bg); border-color: var(--module-color); color: var(--module-color); }
     nav a.nav-platz:hover { background: #fffbeb; border-color: #f59e0b; color: #b45309; }
     nav a.nav-bestand:hover { background: #f5f3ff; border-color: #8b5cf6; color: #6d28d9; }
     nav a.nav-bilanz:hover { background: #fdf2f8; border-color: #ec4899; color: #be185d; }
@@ -411,18 +450,30 @@
       body * { visibility: hidden; }
       #printArea, #printArea * { visibility: visible; }
       #printArea { position: absolute; left: 0; top: 0; width: 100%; }
-      nav, .card-header, #reader, .search-box, #result, .btn-group, .modal-overlay { display: none !important; }
+      .header, nav, .card-header, #reader, .search-box, #result, .btn-group, .modal-overlay { display: none !important; }
       #labelPreview { border: none; padding: 0; margin: 0; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Navigation -->
+  <!-- Logo Bereich -->
+  <header class="header">
+    <div class="logo-container">
+      <!-- 
+        Sobald das Logo vorliegt, diesen div durch Folgendes ersetzen:
+        <img src="pfad/zu/ihrem-logo.png" alt="Firmenlogo">
+      -->
+      <div class="logo-placeholder">
+        [ Ihr Logo hier ]
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation (ohne artikel.html) -->
   <nav>
     <a href="index.html" class="nav-home">🏠 Menü</a>
     <a href="buchen.html" class="nav-buchen">📦 Ware Buchen</a>
-    <a href="artikel.html" class="nav-artikel">🔍 Artikelabfrage</a>
     <a href="platz.html" class="nav-platz">📍 Platzabfrage</a>
     <a href="bestandsabfrage.html" class="nav-bestand">📝 Bestandsabfrage</a>
     <a href="bilanz.html" class="nav-bilanz">📊 Bilanz</a>
