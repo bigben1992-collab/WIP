@@ -38,23 +38,29 @@
     body { 
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
       margin: 0; 
-      padding: 20px 16px; 
+      padding: 24px 16px; 
       background: linear-gradient(135deg, #eef2ff 0%, #f1f5f9 50%, #f0fdf4 100%);
       min-height: 100vh;
       color: var(--text-main);
     }
 
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
     /* --- Logo & Header Bereich --- */
     .header { 
       text-align: center; 
-      margin-bottom: 20px;
+      margin-bottom: 24px;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
 
     .logo-container {
-      max-width: 240px;
+      margin-bottom: 16px;
+      max-width: 280px;
       width: 100%;
       display: flex;
       justify-content: center;
@@ -63,7 +69,7 @@
 
     .logo-placeholder {
       width: 100%;
-      height: 60px;
+      height: 70px;
       background: #ffffff;
       border: 2px dashed #cbd5e1;
       border-radius: var(--radius-md);
@@ -71,7 +77,7 @@
       align-items: center;
       justify-content: center;
       color: #94a3b8;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
       box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     }
@@ -79,63 +85,87 @@
     .logo-container img {
       max-width: 100%;
       height: auto;
-      max-height: 70px;
+      max-height: 80px;
       object-fit: contain;
     }
 
-    /* --- Navigation --- */
-    nav { 
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(8px);
-      padding: 10px 14px; 
-      border-radius: var(--radius-md); 
-      margin-bottom: 24px; 
-      display: flex; 
-      gap: 8px; 
-      flex-wrap: wrap; 
-      justify-content: center;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    .header h1 {
+      margin: 0 0 6px 0;
+      font-size: 28px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    /* --- Navigation Dropdown/Akkordeon --- */
+    .nav-accordion {
+      background: var(--card-bg);
+      border-radius: var(--radius-md);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
       border: 1px solid rgba(226, 232, 240, 0.8);
-      max-width: 960px;
-      margin-left: auto;
-      margin-right: auto;
+      margin-bottom: 24px;
+      overflow: hidden;
     }
 
-    nav a { 
-      text-decoration: none; 
-      color: var(--text-main); 
-      font-weight: 600; 
-      font-size: 13.5px;
-      padding: 6px 12px;
-      border-radius: var(--radius-sm);
-      display: inline-flex;
+    .nav-summary {
+      padding: 12px 16px;
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+      display: flex;
       align-items: center;
-      gap: 6px;
-      transition: all 0.2s ease;
+      justify-content: space-between;
+    }
+
+    .nav-summary:hover {
       background: #f8fafc;
-      border: 1px solid #e2e8f0;
     }
 
-    nav a:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    .nav-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      padding: 12px 16px 16px 16px;
+      border-top: 1px solid #f1f5f9;
     }
 
-    /* Modul-spezifisches Farbmapping für die Nav-Links */
-    nav a.nav-home { color: #475569; }
-    nav a.nav-buchen:hover { background: #ecfdf5; border-color: #10b981; color: #047857; }
-    nav a.nav-platz:hover { background: #fffbeb; border-color: #f59e0b; color: #b45309; }
-    nav a.nav-bestand:hover { background: #f5f3ff; border-color: #8b5cf6; color: #6d28d9; }
-    nav a.nav-bilanz:hover { background: #fdf2f8; border-color: #ec4899; color: #be185d; }
-    nav a.nav-verwaltung:hover { background: #f8fafc; border-color: #64748b; color: #334155; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      color: var(--text-main);
+      font-weight: 600;
+      font-size: 14px;
+      border-left: 4px solid var(--card-accent, #3b82f6);
+      background: #f8fafc;
+      transition: all 0.2s ease;
+    }
+
+    .nav-item:hover {
+      background: #f1f5f9;
+      transform: translateX(2px);
+    }
+
+    /* Farbcodes für Nav-Links */
+    .nav-home { --card-accent: #3b82f6; }
+    .nav-buchen { --card-accent: #10b981; }
+    .nav-platz { --card-accent: #f59e0b; }
+    .nav-bestand { --card-accent: #8b5cf6; }
+    .nav-bilanz { --card-accent: #ec4899; }
+    .nav-verwaltung { --card-accent: #64748b; }
 
     /* --- Hauptkarten-Layout --- */
     .card { 
       background: var(--card-bg); 
       padding: 28px 24px; 
       border-radius: var(--radius-lg); 
-      max-width: 960px;
-      margin: 0 auto;
       box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
       border: 1px solid rgba(226, 232, 240, 0.8);
       position: relative;
@@ -450,71 +480,83 @@
       body * { visibility: hidden; }
       #printArea, #printArea * { visibility: visible; }
       #printArea { position: absolute; left: 0; top: 0; width: 100%; }
-      .header, nav, .card-header, #reader, .search-box, #result, .btn-group, .modal-overlay { display: none !important; }
+      .header, .nav-accordion, .card-header, #reader, .search-box, #result, .btn-group, .modal-overlay { display: none !important; }
       #labelPreview { border: none; padding: 0; margin: 0; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Logo Bereich -->
-  <header class="header">
-    <div class="logo-container">
-      <!-- 
-        Sobald das Logo vorliegt, diesen div durch Folgendes ersetzen:
-        <img src="pfad/zu/ihrem-logo.png" alt="Firmenlogo">
-      -->
-      <div class="logo-placeholder">
-        [ Ihr Logo hier ]
+  <div class="container">
+
+    <!-- Header mit Logo -->
+    <header class="header">
+      <div class="logo-container">
+        <!-- 
+          SOBALD EIN LOGO VORHANDEN IST: 
+          Ersetzen Sie den div.logo-placeholder durch folgendes <img> Tag:
+          <img src="pfad/zu/ihrem-logo.png" alt="Firmenlogo">
+        -->
+        <div class="logo-placeholder">
+          [ Ihr Logo hier ]
+        </div>
       </div>
-    </div>
-  </header>
+      <h1>Artikelabfrage & Druck</h1>
+    </header>
 
-  <!-- Navigation (ohne artikel.html) -->
-  <nav>
-    <a href="index.html" class="nav-home">🏠 Menü</a>
-    <a href="buchen.html" class="nav-buchen">📦 Ware Buchen</a>
-    <a href="platz.html" class="nav-platz">📍 Platzabfrage</a>
-    <a href="bestandsabfrage.html" class="nav-bestand">📝 Bestandsabfrage</a>
-    <a href="bilanz.html" class="nav-bilanz">📊 Bilanz</a>
-    <a href="verwaltung.html" class="nav-verwaltung">⚙️ Verwaltung</a>
-  </nav>
+    <!-- Navigation als ausklappbares Akkordeon (ohne den Punkt 'Artikelabfrage') -->
+    <details class="nav-accordion">
+      <summary class="nav-summary">
+        <span>📍 Navigation / Modul wechseln</span>
+        <small style="color: var(--text-muted); font-weight: normal;">Einklappen/Ausklappen</small>
+      </summary>
+      <nav class="nav-grid">
+        <a href="index.html" class="nav-item nav-home"><span>🏠</span> Hauptmenü</a>
+        <a href="buchen.html" class="nav-item nav-buchen"><span>📦</span> Ware Buchen</a>
+        <a href="platz.html" class="nav-item nav-platz"><span>📍</span> Platzabfrage</a>
+        <a href="bestandsabfrage.html" class="nav-item nav-bestand"><span>📝</span> Bestandsabfrage</a>
+        <a href="bilanz.html" class="nav-item nav-bilanz"><span>📊</span> Bilanz</a>
+        <a href="verwaltung.html" class="nav-item nav-verwaltung"><span>⚙️</span> Verwaltung</a>
+      </nav>
+    </details>
 
-  <!-- Hauptinhalt -->
-  <div class="card">
-    <div class="card-header">
-      <div class="icon-badge">🔍</div>
-      <h2>Artikelabfrage & Druckansicht</h2>
-    </div>
+    <!-- Hauptinhalt -->
+    <div class="card">
+      <div class="card-header">
+        <div class="icon-badge">🔍</div>
+        <h2>Artikelabfrage & Druckansicht</h2>
+      </div>
 
-    <div id="reader"></div>
+      <div id="reader"></div>
 
-    <div class="search-box">
-      <input type="text" id="barcode" placeholder="Barcode scannen oder manuell eingeben...">
-      <button class="btn-search" onclick="confirmAndQuery(document.getElementById('barcode').value)">
-        🔎 Artikel Suchen
-      </button>
-    </div>
+      <div class="search-box">
+        <input type="text" id="barcode" placeholder="Barcode scannen oder manuell eingeben...">
+        <button class="btn-search" onclick="confirmAndQuery(document.getElementById('barcode').value)">
+          🔎 Artikel Suchen
+        </button>
+      </div>
 
-    <div id="result"></div>
-    
-    <div id="printArea">
-      <div id="labelPreview">
-        <div class="label-container" id="labelCard">
-          <div id="qrcodeCanvas"></div>
-          <div class="label-details">
-            <h4 id="lblTitle" style="margin: 0 0 5px 0; font-size: 14px; word-break: break-word; color: #0f172a;"></h4>
-            <p id="lblPrices" style="margin: 0; font-size: 16px; font-weight: bold; color: #1e293b;"></p>
-            <small id="lblCode" style="color: #64748b; font-size: 11px; margin-top: 2px;"></small>
+      <div id="result"></div>
+      
+      <div id="printArea">
+        <div id="labelPreview">
+          <div class="label-container" id="labelCard">
+            <div id="qrcodeCanvas"></div>
+            <div class="label-details">
+              <h4 id="lblTitle" style="margin: 0 0 5px 0; font-size: 14px; word-break: break-word; color: #0f172a;"></h4>
+              <p id="lblPrices" style="margin: 0; font-size: 16px; font-weight: bold; color: #1e293b;"></p>
+              <small id="lblCode" style="color: #64748b; font-size: 11px; margin-top: 2px;"></small>
+            </div>
+          </div>
+          <div class="btn-group">
+            <button class="btn-print" onclick="window.print()">🖨️ Browser Drucken</button>
+            <button class="btn-export" onclick="exportNiceLabelPDF()">📄 PDF Exportieren</button>
+            <button class="btn-png" onclick="exportPNG()">🖼️ PNG Herunterladen</button>
           </div>
         </div>
-        <div class="btn-group">
-          <button class="btn-print" onclick="window.print()">🖨️ Browser Drucken</button>
-          <button class="btn-export" onclick="exportNiceLabelPDF()">📄 PDF Exportieren</button>
-          <button class="btn-png" onclick="exportPNG()">🖼️ PNG Herunterladen</button>
-        </div>
       </div>
     </div>
+
   </div>
 
   <!-- Bestätigungs-Modal -->
@@ -700,4 +742,4 @@
     }
   </script>
 </body>
-  </html>
+</html>
