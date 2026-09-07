@@ -26,7 +26,7 @@
       --radius-md: 12px;
       --radius-sm: 8px;
       
-      /* Modulfarbe: Artikelabfrage & Etikettendruck (Blau) */
+      /* Modulfarbe: Artikelabfrage & Etikettendruck */
       --module-color: #3b82f6;
       --module-bg: #eff6ff;
     }
@@ -327,56 +327,6 @@
       gap: 6px;
     }
 
-    /* --- Akkordeon / Details-Styling --- */
-    details.accordion {
-      margin-top: 16px;
-      border: 1px solid #e2e8f0;
-      border-radius: var(--radius-sm);
-      background: #ffffff;
-      overflow: hidden;
-      transition: all 0.2s ease;
-    }
-
-    details.accordion summary {
-      padding: 12px 16px;
-      font-weight: 700;
-      font-size: 14px;
-      color: var(--text-main);
-      cursor: pointer;
-      background: #f8fafc;
-      user-select: none;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      outline: none;
-    }
-
-    details.accordion summary:hover {
-      background: var(--module-bg);
-      color: var(--module-color);
-    }
-
-    details.accordion summary::-webkit-details-marker {
-      display: none;
-    }
-
-    details.accordion summary::after {
-      content: '➕';
-      font-size: 12px;
-    }
-
-    details.accordion[open] summary::after {
-      content: '➖';
-    }
-
-    .accordion-content {
-      padding: 14px 16px;
-      font-size: 13.5px;
-      color: var(--text-muted);
-      border-top: 1px solid #e2e8f0;
-      line-height: 1.5;
-    }
-
     /* --- Etiketten Vorschau Bereich --- */
     #labelPreview {
       border: 2px dashed #cbd5e1;
@@ -510,6 +460,10 @@
   <!-- Logo Bereich -->
   <header class="header">
     <div class="logo-container">
+      <!-- 
+        Sobald das Logo vorliegt, diesen div durch Folgendes ersetzen:
+        <img src="pfad/zu/ihrem-logo.png" alt="Firmenlogo">
+      -->
       <div class="logo-placeholder">
         [ Ihr Logo hier ]
       </div>
@@ -658,19 +612,7 @@
         for (let p in data.plaetze) {
           html += `<li>📍 <b>${p}</b>: ${data.plaetze[p]} Stk.</li>`;
         }
-        html += `</ul>
-        
-        <!-- Ausklappbares Akkordeon -->
-        <details class="accordion">
-          <summary>📋 Zusatzinformationen & Details</summary>
-          <div class="accordion-content">
-            <p style="margin: 0 0 6px 0;"><b>Barcode:</b> <code>${code}</code></p>
-            <p style="margin: 0;"><b>Hinweis:</b> Weitere Informationen zu Chargen, Mindestbeständen oder Lieferanten können hier dynamisch geladen werden.</p>
-          </div>
-        </details>
-        
-        </div>`;
-        
+        html += '</ul></div>';
         document.getElementById('result').innerHTML = html;
 
         document.getElementById('lblTitle').innerText = data.info.name;
@@ -758,4 +700,4 @@
     }
   </script>
 </body>
-</html>
+  </html>
