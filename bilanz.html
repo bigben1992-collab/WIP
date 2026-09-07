@@ -4,412 +4,81 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lager Beta - Bilanz & Auswertung</title>
-  
-  <!-- Bibliotheken -->
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
   <style>
-    /* 1. Global Reset & Theme Variables */
-    *, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    body { font-family: sans-serif; margin: 15px; background: #f4f6f8; color: #333; }
+    nav { background: #fff; padding: 10px; border-radius: 6px; margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
+    nav a { text-decoration: none; color: #2563eb; font-weight: bold; }
+    nav a.active { color: #1e40af; border-bottom: 2px solid #2563eb; }
+    .card { background: #fff; padding: 15px; border-radius: 6px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    
+    /* Kamera-Container */
+    #scannerWrapper { display: none; margin-bottom: 15px; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px dashed #2563eb; }
+    #reader { width: 100%; max-width: 320px; margin: 0 auto; }
 
-    :root {
-      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      --bg-color: #f1f5f9;
-      --card-bg: #ffffff;
-      --text-main: #0f172a;
-      --text-muted: #64748b;
-      --primary-accent: #6366f1;
-      --primary-hover: #4f46e5;
-      --btn-bg: #f8fafc;
-      --btn-border: #e2e8f0;
-      --success-color: #059669;
-      --success-hover: #047857;
-      --danger-color: #dc2626;
-      --radius-lg: 16px;
-      --radius-md: 10px;
-      --radius-sm: 6px;
-      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
-    }
+    label { font-size: 13px; font-weight: bold; color: #1e40af; display: block; margin-top: 5px; }
+    input { width: 100%; padding: 10px; margin: 5px 0 10px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; }
+    
+    .input-with-btn { display: flex; gap: 5px; align-items: center; }
+    .input-with-btn input { margin: 0; }
+    .btn-cam { padding: 10px 12px; background: #475569; color: white; border: none; border-radius: 4px; cursor: pointer; flex-shrink: 0; }
+    .btn-cam:hover { background: #334155; }
 
-    body {
-      font-family: var(--font-family);
-      background-color: var(--bg-color);
-      color: var(--text-main);
-      line-height: 1.5;
-      padding: 16px;
-      max-width: 600px;
-      margin: 0 auto;
-    }
+    .filter-box { display: flex; flex-wrap: wrap; gap: 10px; }
+    .filter-group { flex: 1; min-width: 140px; }
+    
+    .button-group { display: flex; gap: 10px; margin-top: 10px; }
+    button { flex: 1; padding: 10px; background: #2563eb; color: #fff; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; transition: background 0.2s; }
+    button:hover { background: #1d4ed8; }
+    button:disabled { background: #94a3b8; cursor: not-allowed; }
+    button.btn-pdf { background: #059669; }
+    button.btn-pdf:hover { background: #047857; }
+    
+    .results { margin-top: 20px; border-top: 2px solid #f4f6f8; padding-top: 10px; }
+    .metric { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e2e8f0; }
+    .metric-title { font-weight: bold; color: #334155; }
+    .highlight { font-size: 1.1em; color: #16a34a; font-weight: bold; }
+    .negative { font-size: 1.1em; color: #dc2626; font-weight: bold; }
 
-    /* 2. Logo Placeholder */
-    .logo-container {
-      background: var(--card-bg);
-      border: 2px dashed #cbd5e1;
-      border-radius: var(--radius-lg);
-      padding: 20px;
-      text-align: center;
-      color: #94a3b8;
-      font-weight: 600;
-      font-size: 14px;
-      margin-bottom: 16px;
-    }
+    /* Chart Styles */
+    .chart-btn-group { display: flex; gap: 8px; justify-content: center; margin-bottom: 15px; flex-wrap: wrap; }
+    .chart-btn-group button { flex: none; padding: 6px 12px; background: #f1f5f9; color: #1e40af; border: 1px solid #cbd5e1; font-size: 13px; }
+    .chart-btn-group button.active { background: #2563eb; color: white; border-color: #2563eb; }
+    .chart-container { position: relative; max-width: 450px; margin: 0 auto; height: 280px; }
 
-    /* 3. Button-Grid Navigation */
-    nav.nav-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      margin-bottom: 20px;
-      background: transparent;
-      padding: 0;
-    }
+    .no-data-msg { text-align: center; color: #64748b; font-style: italic; padding: 20px 0; }
 
-    .nav-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      background: var(--card-bg);
-      border: 1px solid var(--btn-border);
-      border-radius: var(--radius-md);
-      padding: 10px 12px;
-      color: var(--text-main);
-      text-decoration: none;
-      font-size: 13px;
-      font-weight: 600;
-      box-shadow: var(--shadow-sm);
-      transition: all 0.2s ease;
-    }
+    /* Benutzerdefinierte Legende */
+    .chart-legend { display: flex; flex-direction: column; gap: 5px; margin-top: 15px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #f8fafc; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+    .legend-color { width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; }
 
-    .nav-btn:hover, .nav-btn.active {
-      border-color: var(--primary-accent);
-      color: var(--primary-accent);
-      background: #f8fafc;
-    }
-
-    /* 4. Main Card with Accent Header Border */
-    .card {
-      background: var(--card-bg);
-      border-radius: var(--radius-lg);
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: var(--shadow-md);
-      position: relative;
-      overflow: hidden;
-      border-top: 4px solid var(--primary-accent);
-    }
-
-    .card-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    .card-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: #e0e7ff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      flex-shrink: 0;
-    }
-
-    h2, h3 {
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--text-main);
-    }
-
-    /* 5. Inputs & Scanner */
-    #scannerWrapper {
-      display: none;
-      margin-bottom: 15px;
-      background: #f8fafc;
-      padding: 10px;
-      border-radius: var(--radius-md);
-      border: 1px dashed var(--primary-accent);
-    }
-
-    #reader {
-      width: 100%;
-      max-width: 320px;
-      margin: 0 auto;
-    }
-
-    label {
-      font-size: 13px;
-      font-weight: 600;
-      color: #1e40af;
-      display: block;
-      margin-bottom: 4px;
-    }
-
-    input[type="text"],
-    input[type="date"] {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #cbd5e1;
-      border-radius: var(--radius-sm);
-      font-family: inherit;
-      font-size: 14px;
-      outline: none;
-      background: #fff;
-      transition: border-color 0.2s;
-    }
-
-    input:focus {
-      border-color: var(--primary-accent);
-    }
-
-    .input-with-btn {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .btn-cam {
-      padding: 10px 14px;
-      background: #475569;
-      color: white;
-      border: none;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      flex-shrink: 0;
-      font-size: 14px;
-      transition: background 0.2s;
-    }
-
-    .btn-cam:hover {
-      background: #334155;
-    }
-
-    .filter-box {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      margin-bottom: 15px;
-    }
-
-    .filter-group {
-      flex: 1;
-      min-width: 130px;
-    }
-
-    /* 6. Action Buttons */
-    .button-group {
-      display: flex;
-      gap: 10px;
-      margin-top: 15px;
-    }
-
-    button.btn-action {
-      flex: 1;
-      padding: 11px 16px;
-      background: var(--primary-accent);
-      color: #ffffff;
-      border: none;
-      font-weight: 600;
-      font-size: 14px;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    button.btn-action:hover {
-      background: var(--primary-hover);
-    }
-
-    button.btn-action:disabled {
-      background: #94a3b8;
-      cursor: not-allowed;
-    }
-
-    button.btn-pdf {
-      background: var(--success-color);
-    }
-
-    button.btn-pdf:hover {
-      background: var(--success-hover);
-    }
-
-    /* 7. Financial Metrics */
-    .results {
-      margin-top: 20px;
-      border-top: 1px solid #f1f5f9;
-      padding-top: 8px;
-    }
-
-    .metric {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 0;
-      border-bottom: 1px solid #f1f5f9;
-    }
-
-    .metric-title {
-      font-weight: 600;
-      color: #334155;
-      font-size: 14px;
-    }
-
-    .highlight {
-      font-size: 1.1em;
-      color: #16a34a;
-      font-weight: 700;
-    }
-
-    .negative {
-      font-size: 1.1em;
-      color: var(--danger-color);
-      font-weight: 700;
-    }
-
-    /* 8. Chart Tabs & Container */
-    .chart-btn-group {
-      display: flex;
-      gap: 8px;
-      justify-content: center;
-      margin-bottom: 15px;
-      flex-wrap: wrap;
-    }
-
-    .chart-btn-group button {
-      flex: none;
-      padding: 6px 12px;
-      background: #f1f5f9;
-      color: #1e40af;
-      border: 1px solid #cbd5e1;
-      font-size: 12px;
-      font-weight: 600;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-    }
-
-    .chart-btn-group button.active {
-      background: var(--primary-accent);
-      color: white;
-      border-color: var(--primary-accent);
-    }
-
-    .chart-container {
-      position: relative;
-      max-width: 450px;
-      margin: 0 auto;
-      height: 260px;
-    }
-
-    .no-data-msg {
-      text-align: center;
-      color: var(--text-muted);
-      font-style: italic;
-      padding: 20px 0;
-    }
-
-    .chart-legend {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-top: 15px;
-      padding: 12px;
-      border: 1px solid var(--btn-border);
-      border-radius: var(--radius-md);
-      background-color: #f8fafc;
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-    }
-
-    .legend-color {
-      width: 14px;
-      height: 14px;
-      border-radius: 3px;
-      flex-shrink: 0;
-    }
-
-    /* 9. Data Table */
-    .table-container {
-      overflow-x: auto;
-      margin-top: 15px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-      text-align: left;
-    }
-
-    th, td {
-      padding: 10px 12px;
-      border-bottom: 1px solid #f1f5f9;
-    }
-
-    th {
-      background-color: #f8fafc;
-      color: #1e40af;
-      font-weight: 600;
-    }
-
-    .badge-ek {
-      background: #dbeafe;
-      color: #1e40af;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 700;
-    }
-
-    .badge-vk {
-      background: #dcfce7;
-      color: #166534;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 700;
-    }
+    /* Tabelle für Einzeltransaktionen */
+    .table-container { overflow-x: auto; margin-top: 15px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
+    th, td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; }
+    th { background-color: #f8fafc; color: #1e40af; }
+    .badge-ek { background: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    .badge-vk { background: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: bold; }
   </style>
 </head>
 <body>
 
-  <!-- Logo Placeholder -->
-  <div class="logo-container">
-    [ Ihr Logo hier ]
-  </div>
-
-  <!-- Standardized Button Grid Navigation -->
-  <nav class="nav-grid">
-    <a href="index.html" class="nav-btn">🏠 Menü</a>
-    <a href="buchen.html" class="nav-btn">📦 Ware Buchen</a>
-    <a href="artikel.html" class="nav-btn">🔍 Artikelabfrage</a>
-    <a href="platz.html" class="nav-btn">📍 Platzabfrage</a>
-    <a href="bestandsabfrage.html" class="nav-btn">📝 Bestandsabfrage</a>
-    <a href="bilanz.html" class="nav-btn active">📊 Bilanz</a>
-    <a href="verwaltung.html" class="nav-btn" style="grid-column: span 2;">⚙️ Verwaltung</a>
+  <nav>
+    <a href="index.html">🏠 Menü</a> |
+    <a href="buchen.html">Buchen (EK/VK)</a> |
+    <a href="artikel.html">Artikelabfrage & Etikettendruck</a> |
+    <a href="platz.html">Platzabfrage</a> |
+    <a href="bestandsabfrage.html">Bestandsabfrage</a> |
+    <a href="verwaltung.html">Verwaltung</a>
   </nav>
 
-  <!-- Main Card: Finanzbilanz -->
   <div class="card">
-    <div class="card-header">
-      <div class="card-icon">📊</div>
-      <h2>Finanzbilanz</h2>
-    </div>
+    <h2>Finanzbilanz</h2>
 
     <div id="scannerWrapper">
       <div id="reader"></div>
@@ -434,8 +103,8 @@
     </div>
 
     <div class="button-group">
-      <button id="btnBerechnen" class="btn-action" onclick="ladeBilanz()">Bilanz berechnen</button>
-      <button id="btnPdf" class="btn-action btn-pdf" onclick="exportPDF()" disabled>📄 PDF Export</button>
+      <button id="btnBerechnen" onclick="ladeBilanz()">Bilanz berechnen</button>
+      <button id="btnPdf" class="btn-pdf" onclick="exportPDF()" disabled>📄 PDF Export</button>
     </div>
 
     <div class="results">
@@ -462,10 +131,9 @@
     </div>
   </div>
 
-  <!-- Chart Card -->
   <div class="card" id="chartCard">
     <h3>Prozentuale Verteilung</h3>
-    <div class="chart-btn-group" style="margin-top: 10px;">
+    <div class="chart-btn-group">
       <button id="btnTabLager" class="active" onclick="switchChartTab('lager')">Lagerwert / Kapital (%)</button>
       <button id="btnTabUmsatz" onclick="switchChartTab('umsatz')">Umsatzanteil (%)</button>
       <button id="btnTabEinkauf" onclick="switchChartTab('einkauf')">Wareneinkauf (%)</button>
@@ -480,7 +148,6 @@
     <div id="chartLegend" class="chart-legend" style="display: none;"></div>
   </div>
 
-  <!-- Single Transactions Card -->
   <div class="card" id="transaktionenCard" style="display: none;">
     <h3>Einzeltransaktionen im Zeitraum</h3>
     <div class="table-container">
@@ -644,6 +311,7 @@
         }
       }
 
+      // 1. Werte bereinigen und aggregieren
       const groupedValues = {};
       let gesamtWert = 0;
 
@@ -660,6 +328,7 @@
         });
       }
 
+      // Bei der Gewinndarstellung nur Artikel mit positivem Ergebnis einbeziehen
       const labels = Object.keys(groupedValues).filter(label => {
         return currentChartMode === 'gewinn' ? groupedValues[label] > 0 : groupedValues[label] >= 0;
       });
@@ -668,6 +337,7 @@
         gesamtWert += groupedValues[label];
       });
 
+      // Konfiguration dynamischer Hinweistexte
       const modeNames = {
         lager: "Lagerwert / Kapital",
         umsatz: "Umsatz",
@@ -675,6 +345,7 @@
         gewinn: "Gewinn"
       };
 
+      // Fallback-Behandlung falls keine verwertbaren Daten vorliegen
       if (labels.length === 0 || gesamtWert <= 0) {
         if (chartInstance) chartInstance.destroy();
         chartWrapper.style.display = "none";
@@ -689,11 +360,13 @@
       noDataMsg.style.display = "none";
       chartWrapper.style.display = "block";
 
+      // 2. Prozentuale Verteilung errechnen
       const wertes = labels.map(label => groupedValues[label]);
       const values = labels.map(label => {
         return gesamtWert > 0 ? ((groupedValues[label] / gesamtWert) * 100).toFixed(2) : 0;
       });
 
+      // 3. Farbzuweisung per HSL-Farbkreis
       const colors = labels.map((_, i) => {
         const hue = (i * 137.5) % 360; 
         return `hsl(${hue}, 65%, 50%)`;
@@ -702,6 +375,7 @@
       legend.style.display = "flex";
       legend.innerHTML = ""; 
 
+      // 4. Legende im HTML generieren
       labels.forEach((label, i) => {
         const legendItem = document.createElement("div");
         legendItem.className = "legend-item";
@@ -810,9 +484,8 @@
       doc.autoTable({
         startY: 32,
         head: [["Kennzahl", "Wert"]],
-        body: summaryRows,
         theme: "striped",
-        headStyles: { fillColor: [99, 102, 241] }
+        headStyles: { fillColor: [37, 99, 235] }
       });
 
       if (aktuelleTransaktionen.length > 0) {
@@ -832,7 +505,7 @@
           head: [["Datum", "Typ", "Artikel", "Menge", "Einzelpreis", "Gesamt"]],
           body: tableBody,
           theme: "grid",
-          headStyles: { fillColor: [79, 70, 229] }
+          headStyles: { fillColor: [30, 64, 175] }
         });
       }
 
