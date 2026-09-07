@@ -3,69 +3,321 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#f59e0b">
+
   <title>Lager Beta - Platzabfrage</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
+  
   <style>
-    body { font-family: sans-serif; margin: 15px; background: #f4f6f8; }
-    nav { background: #fff; padding: 10px; border-radius: 6px; margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
-    nav a { text-decoration: none; color: #2563eb; font-weight: bold; }
-    .card { background: #fff; padding: 15px; border-radius: 6px; }
-    #reader { width: 100%; max-width: 350px; margin: 0 auto 15px auto; }
-    input, button { width: 100%; padding: 10px; margin: 5px 0; box-sizing: border-box; }
-    button { background: #2563eb; color: #fff; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; }
-    .btn-cancel { background: #dc2626; }
-    .btn-group { display: flex; gap: 10px; margin-top: 15px; }
-    .btn-group button { flex: 1; }
-    ul { list-style: none; padding: 0; }
-    li { background: #f8fafc; margin: 5px 0; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px; }
+    :root {
+      --bg-color: #f1f5f9;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --primary: #f59e0b; /* Akzentfarbe für Platzabfrage */
+    }
 
-    /* Modal Styling für Bestätigungsabfrage */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body { 
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+      margin: 0; 
+      padding: 24px 16px; 
+      background: linear-gradient(135deg, #eef2ff 0%, #f1f5f9 50%, #f0fdf4 100%);
+      min-height: 100vh;
+      color: var(--text-main);
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    /* --- Header & Logo --- */
+    .header { 
+      text-align: center; 
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .logo-container {
+      margin-bottom: 16px;
+      max-width: 280px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .logo-placeholder {
+      width: 100%;
+      height: 70px;
+      background: #ffffff;
+      border: 2px dashed #cbd5e1;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+
+    .logo-container img {
+      max-width: 100%;
+      height: auto;
+      max-height: 80px;
+      object-fit: contain;
+    }
+
+    .header h1 {
+      margin: 0 0 6px 0;
+      font-size: 28px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    /* --- Navigation Akkordeon --- */
+    .nav-accordion {
+      background: var(--card-bg);
+      border-radius: var(--radius-md);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+
+    .nav-summary {
+      padding: 12px 16px;
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-summary:hover {
+      background: #f8fafc;
+    }
+
+    .nav-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      padding: 12px 16px 16px 16px;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      color: var(--text-main);
+      font-weight: 600;
+      font-size: 14px;
+      border-left: 4px solid var(--card-accent, #3b82f6);
+      background: #f8fafc;
+      transition: all 0.2s ease;
+    }
+
+    .nav-item:hover {
+      background: #f1f5f9;
+      transform: translateX(2px);
+    }
+
+    /* Farbcodes für Nav-Links */
+    .nav-home { --card-accent: #3b82f6; }
+    .nav-buchen { --card-accent: #10b981; }
+    .nav-artikel { --card-accent: #3b82f6; }
+    .nav-bestand { --card-accent: #8b5cf6; }
+    .nav-bilanz { --card-accent: #ec4899; }
+    .nav-verwaltung { --card-accent: #64748b; }
+
+    /* --- Karten Layout & UI-Elemente --- */
+    .card { 
+      background: var(--card-bg); 
+      padding: 24px; 
+      border-radius: var(--radius-lg); 
+      margin-bottom: 24px; 
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: var(--primary);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      color: var(--text-main);
+    }
+
+    #reader { 
+      width: 100%; 
+      max-width: 320px; 
+      margin: 0 auto 16px auto; 
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    input { 
+      width: 100%; 
+      padding: 10px 12px; 
+      margin-bottom: 12px; 
+      box-sizing: border-box; 
+      border: 1px solid #cbd5e1; 
+      border-radius: var(--radius-sm); 
+      font-family: inherit; 
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    button { 
+      width: 100%;
+      padding: 12px; 
+      background: var(--primary); 
+      color: #fff; 
+      border: none; 
+      font-weight: 700; 
+      border-radius: var(--radius-sm); 
+      cursor: pointer; 
+      transition: background 0.2s, transform 0.1s; 
+      font-size: 14px;
+    }
+
+    button:hover { background: #d97706; }
+    button:active { transform: scale(0.99); }
+    button.btn-cancel { background: #ef4444; }
+    button.btn-cancel:hover { background: #dc2626; }
+
+    .btn-group { display: flex; gap: 12px; margin-top: 16px; }
+    .btn-group button { flex: 1; }
+
+    #result { margin-top: 20px; }
+    #result h3 { font-size: 16px; margin-bottom: 8px; }
+
+    ul { list-style: none; padding: 0; margin: 0; }
+    li { 
+      background: #f8fafc; 
+      margin-bottom: 8px; 
+      padding: 12px; 
+      border: 1px solid #e2e8f0; 
+      border-radius: var(--radius-sm); 
+      font-size: 14px;
+    }
+
+    /* Modal Styling */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(2px);
       display: none;
       align-items: center;
       justify-content: center;
       z-index: 1000;
     }
+
     .modal-box {
       background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      max-width: 320px;
+      padding: 24px;
+      border-radius: var(--radius-lg);
+      max-width: 340px;
       width: 90%;
       text-align: center;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     }
-    .modal-box h3 { margin-top: 0; }
+
+    .modal-box h3 { margin-top: 0; margin-bottom: 8px; }
+    .modal-box p { font-size: 14px; color: var(--text-muted); margin-bottom: 12px; }
+
     .modal-box .confirm-code { 
-      font-size: 18px; 
-      font-weight: bold; 
-      color: #2563eb; 
-      margin: 10px 0;
+      font-size: 20px; 
+      font-weight: 800; 
+      color: var(--primary); 
+      margin: 12px 0;
       word-break: break-all;
     }
   </style>
 </head>
 <body>
-  <nav>
-    <a href="index.html">🏠 Menü</a> |
-    <a href="buchen.html">Buchen (EK/VK)</a> |
-    <a href="artikel.html">Artikelabfrage & Etikettendruck</a> |
-    <a href="bestandsabfrage.html">Bestandsabfrage</a> |
-    <a href="bilanz.html">Bilanz</a> |
-    <a href="verwaltung.html">Verwaltung</a>
-  </nav>
 
-  <div class="card">
-    <h2>Lagerplatzabfrage</h2>
-    <div id="reader"></div>
+  <div class="container">
 
-    <input type="text" id="platz" placeholder="Lagerplatz eingeben oder scannen (z.B. A1)">
-    <button onclick="confirmAndQuery(document.getElementById('platz').value)">Suchen</button>
+    <!-- Header mit Logo -->
+    <header class="header">
+      <div class="logo-container">
+        <!-- 
+          SOBALD EIN LOGO VORHANDEN IST: 
+          Ersetzen Sie den div.logo-placeholder durch folgendes <img> Tag:
+          <img src="pfad/zu/ihrem-logo.png" alt="Firmenlogo">
+        -->
+        <div class="logo-placeholder">
+          [ Ihr Logo hier ]
+        </div>
+      </div>
+      <h1>Lagerplatzabfrage</h1>
+    </header>
 
-    <div id="result"></div>
+    <!-- Navigation als ausklappbares Akkordeon (ohne den Punkt 'Platzabfrage') -->
+    <details class="nav-accordion">
+      <summary class="nav-summary">
+        <span>📍 Navigation / Modul wechseln</span>
+        <small style="color: var(--text-muted); font-weight: normal;">Einklappen/Ausklappen</small>
+      </summary>
+      <nav class="nav-grid">
+        <a href="index.html" class="nav-item nav-home"><span>🏠</span> Hauptmenü</a>
+        <a href="buchen.html" class="nav-item nav-buchen"><span>📦</span> Ware Buchen</a>
+        <a href="artikel.html" class="nav-item nav-artikel"><span>🔍</span> Artikelabfrage</a>
+        <a href="bestandsabfrage.html" class="nav-item nav-bestand"><span>📝</span> Bestandsabfrage</a>
+        <a href="bilanz.html" class="nav-item nav-bilanz"><span>📊</span> Bilanz</a>
+        <a href="verwaltung.html" class="nav-item nav-verwaltung"><span>⚙️</span> Verwaltung</a>
+      </nav>
+    </details>
+
+    <div class="card">
+      <h2>Suchen / Scannen</h2>
+      <div id="reader"></div>
+
+      <input type="text" id="platz" placeholder="Lagerplatz eingeben oder scannen (z.B. A1)">
+      <button onclick="confirmAndQuery(document.getElementById('platz').value)">Suchen</button>
+
+      <div id="result"></div>
+    </div>
+
   </div>
 
   <!-- Bestätigungs-Modal -->
