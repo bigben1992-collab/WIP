@@ -3,74 +3,326 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#64748b">
+
   <title>Lager Beta - Verwaltung</title>
+  
   <style>
-    body { font-family: sans-serif; margin: 20px; background: #f4f6f8; }
-    nav { background: #fff; padding: 10px; border-radius: 6px; margin-bottom: 25px; display: flex; gap: 10px; flex-wrap: wrap; }
-    nav a { text-decoration: none; color: #2563eb; font-weight: bold; }
-    .header { text-align: center; margin-bottom: 30px; }
-    .grid-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 15px;
-      max-width: 900px;
+    :root {
+      --bg-color: #f1f5f9;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --primary: #64748b; /* Akzentfarbe für Verwaltung */
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body { 
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+      margin: 0; 
+      padding: 24px 16px; 
+      background: linear-gradient(135deg, #eef2ff 0%, #f1f5f9 50%, #f0fdf4 100%);
+      min-height: 100vh;
+      color: var(--text-main);
+    }
+
+    .container {
+      max-width: 960px;
       margin: 0 auto;
     }
-    .menu-card {
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      text-decoration: none;
-      color: #1e293b;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+
+    /* --- Header & Logo --- */
+    .header { 
+      text-align: center; 
+      margin-bottom: 24px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
-    .menu-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+
+    .logo-container {
+      margin-bottom: 16px;
+      max-width: 280px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
-    .menu-icon { font-size: 32px; margin-bottom: 10px; }
-    .menu-title { font-weight: bold; font-size: 18px; color: #2563eb; }
-    .menu-desc { font-size: 13px; color: #64748b; text-align: center; margin-top: 5px; }
+
+    .logo-placeholder {
+      width: 100%;
+      height: 70px;
+      background: #ffffff;
+      border: 2px dashed #cbd5e1;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+
+    .logo-container img {
+      max-width: 100%;
+      height: auto;
+      max-height: 80px;
+      object-fit: contain;
+    }
+
+    .header h1 {
+      margin: 0 0 6px 0;
+      font-size: 28px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #64748b, #334155);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .header p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    /* --- Navigation Akkordeon --- */
+    .nav-accordion {
+      background: var(--card-bg);
+      border-radius: var(--radius-md);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+
+    .nav-summary {
+      padding: 12px 16px;
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-summary:hover {
+      background: #f8fafc;
+    }
+
+    .nav-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      padding: 12px 16px 16px 16px;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      color: var(--text-main);
+      font-weight: 600;
+      font-size: 14px;
+      border-left: 4px solid var(--card-accent, #3b82f6);
+      background: #f8fafc;
+      transition: all 0.2s ease;
+    }
+
+    .nav-item:hover {
+      background: #f1f5f9;
+      transform: translateX(2px);
+    }
+
+    /* Farbcodes für Nav-Links */
+    .nav-home { --card-accent: #3b82f6; }
+    .nav-buchen { --card-accent: #10b981; }
+    .nav-artikel { --card-accent: #3b82f6; }
+    .nav-platz { --card-accent: #f59e0b; }
+    .nav-bestand { --card-accent: #8b5cf6; }
+    .nav-bilanz { --card-accent: #ec4899; }
+
+    /* --- Grid & Cards Layout (aus Index übernommen) --- */
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .menu-card {
+      background: var(--card-bg);
+      padding: 24px 20px;
+      border-radius: var(--radius-lg);
+      text-decoration: none;
+      color: var(--text-main);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Akzentleiste am oberen Kartenrand */
+    .menu-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 5px;
+      background: var(--card-accent, #64748b);
+      transition: height 0.2s ease;
+    }
+
+    .menu-card:hover, .menu-card:focus-visible {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+      outline: none;
+    }
+
+    .menu-card:hover::before {
+      height: 7px;
+    }
+
+    /* Icon-Styling */
+    .icon-wrapper {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: var(--icon-bg, #f8fafc);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      transition: transform 0.25s ease;
+    }
+
+    .menu-card:hover .icon-wrapper {
+      transform: scale(1.1) rotate(3deg);
+    }
+
+    .menu-icon { 
+      font-size: 28px; 
+      line-height: 1;
+    }
+
+    .menu-title { 
+      font-weight: 700; 
+      font-size: 18px; 
+      color: var(--text-main); 
+      margin: 0;
+      text-align: center;
+    }
+
+    .menu-desc { 
+      font-size: 13.5px; 
+      color: var(--text-muted); 
+      text-align: center; 
+      margin: 6px 0 0 0; 
+      line-height: 1.4;
+    }
+
+    /* --- Individuelle Farbschemata für Verwaltungs-Unterseiten --- */
+    .card-preise {
+      --card-accent: #0284c7;
+      --icon-bg: #e0f2fe;
+    }
+    .card-umlagern {
+      --card-accent: #d97706;
+      --icon-bg: #fef3c7;
+    }
+    .card-inventur {
+      --card-accent: #dc2626;
+      --icon-bg: #fee2e2;
+    }
   </style>
 </head>
 <body>
 
-  <nav>
-    <a href="index.html">🏠 Hauptmenü</a> |
-    <a href="buchen.html">Buchen</a> |
-    <a href="artikel.html">Artikelabfrage & Etikettendruck</a> |
-    <a href="platz.html">Platzabfrage</a> |
-    <a href="bestandsabfrage.html">Bestandsabfrage</a> |
-    <a href="bilanz.html">Bilanz</a> |
-  </nav>
+  <div class="container">
 
-  <div class="header">
-    <h1>Verwaltung & Inventur</h1>
-    <p>Bitte wählen Sie einen Verwaltungsbereich aus:</p>
-  </div>
+    <!-- Header mit Logo -->
+    <header class="header">
+      <div class="logo-container">
+        <!-- 
+          SOBALD EIN LOGO VORHANDEN IST: 
+          Ersetzen Sie den div.logo-placeholder durch folgendes <img> Tag:
+          <img src="pfad/zu/ihrem-logo.png" alt="Firmenlogo">
+        -->
+        <div class="logo-placeholder">
+          [ Ihr Logo hier ]
+        </div>
+      </div>
+      <h1>Verwaltung & Inventur</h1>
+      <p>Bitte wählen Sie einen Verwaltungsbereich aus:</p>
+    </header>
 
-  <div class="grid-container">
-    <a href="preise.html" class="menu-card">
-      <div class="menu-icon">💶</div>
-      <div class="menu-title">Preise anpassen</div>
-      <div class="menu-desc">EK- und VK-Preise von Artikeln bearbeiten</div>
-    </a>
+    <!-- Navigation als ausklappbares Akkordeon (ohne den Punkt 'Verwaltung') -->
+    <details class="nav-accordion">
+      <summary class="nav-summary">
+        <span>📍 Navigation / Modul wechseln</span>
+        <small style="color: var(--text-muted); font-weight: normal;">Einklappen/Ausklappen</small>
+      </summary>
+      <nav class="nav-grid">
+        <a href="index.html" class="nav-item nav-home"><span>🏠</span> Hauptmenü</a>
+        <a href="buchen.html" class="nav-item nav-buchen"><span>📦</span> Ware Buchen</a>
+        <a href="artikel.html" class="nav-item nav-artikel"><span>🔍</span> Artikelabfrage</a>
+        <a href="platz.html" class="nav-item nav-platz"><span>📍</span> Platzabfrage</a>
+        <a href="bestandsabfrage.html" class="nav-item nav-bestand"><span>📝</span> Bestandsabfrage</a>
+        <a href="bilanz.html" class="nav-item nav-bilanz"><span>📊</span> Bilanz</a>
+      </nav>
+    </details>
 
-    <a href="umlagern.html" class="menu-card">
-      <div class="menu-icon">🔄</div>
-      <div class="menu-title">Umlagerung</div>
-      <div class="menu-desc">Bestände zwischen Lagerplätzen verschieben</div>
-    </a>
+    <!-- Karten-Grid für Unterpunkte -->
+    <main class="grid-container">
+      <a href="preise.html" class="menu-card card-preise">
+        <div class="icon-wrapper">
+          <span class="menu-icon" role="img" aria-label="Euro-Schein">💶</span>
+        </div>
+        <h2 class="menu-title">Preise anpassen</h2>
+        <p class="menu-desc">EK- und VK-Preise von Artikeln bearbeiten</p>
+      </a>
 
-    <a href="inventur.html" class="menu-card">
-      <div class="menu-icon">📋</div>
-      <div class="menu-title">Inventur / Korrektur</div>
-      <div class="menu-desc">Ist-Bestände manuell überschreiben</div>
-    </a>
+      <a href="umlagern.html" class="menu-card card-umlagern">
+        <div class="icon-wrapper">
+          <span class="menu-icon" role="img" aria-label="Pfeile im Kreis">🔄</span>
+        </div>
+        <h2 class="menu-title">Umlagerung</h2>
+        <p class="menu-desc">Bestände zwischen Lagerplätzen verschieben</p>
+      </a>
+
+      <a href="inventur.html" class="menu-card card-inventur">
+        <div class="icon-wrapper">
+          <span class="menu-icon" role="img" aria-label="Klemmbrett">📋</span>
+        </div>
+        <h2 class="menu-title">Inventur / Korrektur</h2>
+        <p class="menu-desc">Ist-Bestände manuell überschreiben</p>
+      </a>
+    </main>
+
   </div>
 
 </body>
