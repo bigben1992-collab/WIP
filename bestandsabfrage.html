@@ -399,6 +399,12 @@
           ? `<span class="badge-zero">0</span>` 
           : `<span class="badge-stock">${item.bestand} Stk.</span>`;
 
+        // Mülleimer-Button nur anzeigen, wenn eine Einkaufsliste geladen ist & der Artikel darin ist
+        const showDeleteBtn = activeListName && isChecked;
+        const actionHtml = showDeleteBtn 
+          ? `<button class="btn-sm-del" onclick="removeItemFromCart('${item.barcode}')" title="Artikel aus der Liste entfernen">🗑️</button>` 
+          : "";
+
         row.innerHTML = `
           <td style="text-align: center;">
             <input type="checkbox" id="chk_${item.barcode}" ${isChecked ? "checked" : ""} 
@@ -413,9 +419,7 @@
               onchange="updateQuantity('${item.barcode}', this.value)">
           </td>
           <td>${plaetzeHtml}</td>
-          <td style="text-align: center;">
-            <button class="btn-sm-del" onclick="removeItemFromCart('${item.barcode}')" title="Artikel entfernen">🗑️</button>
-          </td>
+          <td style="text-align: center;">${actionHtml}</td>
         `;
         tbody.appendChild(row);
       });
@@ -433,13 +437,19 @@
         shoppingCart.delete(barcode);
       }
       
-      const chkElem = document.getElementById(`chk_${barcode}`);
-      if (chkElem) {
-        const row = chkElem.closest("tr");
-        if (isChecked) row.classList.add("selected-row");
-        else row.classList.remove("selected-row");
-      }
       syncToBuchenStorage();
+      
+      // Bei Listenbearbeitung die Ansicht aktualisieren (z.B. Button aus-/einblenden)
+      if (activeListName) {
+        applyFilters();
+      } else {
+        const chkElem = document.getElementById(`chk_${barcode}`);
+        if (chkElem) {
+          const row = chkElem.closest("tr");
+          if (isChecked) row.classList.add("selected-row");
+          else row.classList.remove("selected-row");
+        }
+      }
     }
 
     function updateQuantity(barcode, value) {
@@ -452,6 +462,16 @@
 
     function removeItemFromCart(barcode) {
       shoppingCart.delete(barcode);
+      
+      // Falls eine bestehende Liste bearbeitet wird, direkt in der Speicherung aktualisieren
+      if (activeListName) {
+        const lists = JSON.parse(localStorage.getItem("lager_einkaufslisten") || "{}");
+        if (lists[activeListName]) {
+          delete lists[activeListName][barcode];
+          localStorage.setItem("lager_einkaufslisten", JSON.stringify(lists));
+        }
+      }
+
       syncToBuchenStorage();
       applyFilters();
     }
@@ -469,12 +489,9 @@
         } else {
           shoppingCart.delete(barcode);
         }
-        
-        const row = chk.closest("tr");
-        if (checkState) row.classList.add("selected-row");
-        else row.classList.remove("selected-row");
       });
       syncToBuchenStorage();
+      applyFilters();
     }
 
     function syncToBuchenStorage() {
