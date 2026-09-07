@@ -3,48 +3,316 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#3b82f6">
+
   <title>Lager Beta - Artikel & Druck</title>
+  
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  
   <style>
-    body { font-family: sans-serif; margin: 15px; background: #f4f6f8; }
-    nav { background: #fff; padding: 10px; border-radius: 6px; margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
-    nav a { text-decoration: none; color: #2563eb; font-weight: bold; }
-    .card { background: #fff; padding: 15px; border-radius: 6px; }
-    #reader { width: 100%; max-width: 350px; margin: 0 auto 15px auto; }
-    input, button { width: 100%; padding: 10px; margin: 5px 0; box-sizing: border-box; }
-    button { background: #2563eb; color: #fff; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; }
-    .btn-print { background: #059669; }
-    .btn-export { background: #4f46e5; }
-    .btn-png { background: #d97706; }
-    .btn-cancel { background: #dc2626; }
-    ul { list-style: none; padding: 0; }
-    li { background: #f8fafc; margin: 5px 0; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px; }
-    
-    #labelPreview {
-      border: 1px dashed #ccc;
-      padding: 10px;
-      margin-top: 15px;
-      display: none;
-      background: #fff;
+    :root {
+      --bg-color: #f1f5f9;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      
+      /* Modulfarbe: Artikelabfrage & Etikettendruck */
+      --module-color: #3b82f6;
+      --module-bg: #eff6ff;
     }
 
-    /* Anordnung & Dimensionen für 40x14mm Lückenpapier */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body { 
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+      margin: 0; 
+      padding: 20px 16px; 
+      background: linear-gradient(135deg, #eef2ff 0%, #f1f5f9 50%, #f0fdf4 100%);
+      min-height: 100vh;
+      color: var(--text-main);
+    }
+
+    /* --- Navigation --- */
+    nav { 
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      padding: 10px 14px; 
+      border-radius: var(--radius-md); 
+      margin-bottom: 24px; 
+      display: flex; 
+      gap: 8px; 
+      flex-wrap: wrap; 
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      max-width: 960px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    nav a { 
+      text-decoration: none; 
+      color: var(--text-main); 
+      font-weight: 600; 
+      font-size: 13.5px;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+    }
+
+    nav a:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    /* Modul-spezifisches Farbmapping für die Nav-Links */
+    nav a.nav-home { color: #475569; }
+    nav a.nav-buchen:hover { background: #ecfdf5; border-color: #10b981; color: #047857; }
+    nav a.nav-artikel { background: var(--module-bg); border-color: var(--module-color); color: var(--module-color); }
+    nav a.nav-platz:hover { background: #fffbeb; border-color: #f59e0b; color: #b45309; }
+    nav a.nav-bestand:hover { background: #f5f3ff; border-color: #8b5cf6; color: #6d28d9; }
+    nav a.nav-bilanz:hover { background: #fdf2f8; border-color: #ec4899; color: #be185d; }
+    nav a.nav-verwaltung:hover { background: #f8fafc; border-color: #64748b; color: #334155; }
+
+    /* --- Hauptkarten-Layout --- */
+    .card { 
+      background: var(--card-bg); 
+      padding: 28px 24px; 
+      border-radius: var(--radius-lg); 
+      max-width: 960px;
+      margin: 0 auto;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 5px;
+      background: var(--module-color);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .card-header .icon-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--module-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+
+    .card-header h2 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.3px;
+    }
+
+    /* --- Scanner Area --- */
+    #reader { 
+      width: 100%; 
+      max-width: 360px; 
+      margin: 0 auto 20px auto; 
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 2px dashed #cbd5e1;
+      background: #f8fafc;
+    }
+
+    #reader video {
+      border-radius: var(--radius-md);
+    }
+
+    /* --- Formular-Elemente --- */
+    .search-box {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 480px;
+      margin: 0 auto 20px auto;
+    }
+
+    input[type="text"] { 
+      width: 100%; 
+      padding: 12px 16px; 
+      font-size: 15px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      box-sizing: border-box; 
+      outline: none;
+      transition: all 0.2s ease;
+      background: #f8fafc;
+      color: var(--text-main);
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--module-color);
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+    }
+
+    button { 
+      width: 100%; 
+      padding: 12px 18px; 
+      font-size: 15px;
+      font-weight: 700;
+      border-radius: var(--radius-md);
+      border: none;
+      cursor: pointer; 
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-search {
+      background: var(--module-color);
+      color: #ffffff;
+      box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+    }
+    .btn-search:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 8px -1px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-print { 
+      background: #10b981; 
+      color: #ffffff; 
+      box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.25);
+    }
+    .btn-print:hover { background: #059669; transform: translateY(-1px); }
+
+    .btn-export { 
+      background: #6366f1; 
+      color: #ffffff; 
+      box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.25);
+    }
+    .btn-export:hover { background: #4f46e5; transform: translateY(-1px); }
+
+    .btn-png { 
+      background: #f59e0b; 
+      color: #ffffff; 
+      box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.25);
+    }
+    .btn-png:hover { background: #d97706; transform: translateY(-1px); }
+
+    .btn-cancel { 
+      background: #ef4444; 
+      color: #ffffff; 
+    }
+    .btn-cancel:hover { background: #dc2626; }
+
+    /* --- Ergebnisse --- */
+    #result {
+      margin-top: 20px;
+    }
+
+    .result-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius-md);
+      padding: 18px;
+      margin-bottom: 20px;
+    }
+
+    .result-card h3 {
+      margin: 0 0 10px 0;
+      font-size: 20px;
+      color: var(--text-main);
+    }
+
+    .result-meta {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+      font-size: 15px;
+    }
+
+    .price-badge {
+      background: #ffffff;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid #cbd5e1;
+    }
+
+    ul.platz-liste { 
+      list-style: none; 
+      padding: 0; 
+      margin: 10px 0 0 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+    }
+
+    ul.platz-liste li { 
+      background: #ffffff; 
+      padding: 10px 14px; 
+      border: 1px solid #cbd5e1; 
+      border-radius: var(--radius-sm); 
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* --- Etiketten Vorschau Bereich --- */
+    #labelPreview {
+      border: 2px dashed #cbd5e1;
+      border-radius: var(--radius-md);
+      padding: 24px 16px;
+      margin-top: 20px;
+      display: none;
+      background: #ffffff;
+      text-align: center;
+    }
+
     .label-container {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       width: 400px;
       height: 140px;
       margin: 0 auto;
       border: 1px solid #000;
-      padding: 6px;
+      padding: 8px;
       border-radius: 6px;
       background: #fff;
       box-sizing: border-box;
       overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     }
 
     #qrcodeCanvas {
@@ -69,61 +337,113 @@
       overflow: hidden;
     }
 
-    .btn-group { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
-    .btn-group button { flex: 1; min-width: 140px; }
+    .btn-group { 
+      display: flex; 
+      gap: 12px; 
+      margin-top: 20px; 
+      flex-wrap: wrap; 
+      justify-content: center;
+    }
+    .btn-group button { 
+      flex: 1; 
+      min-width: 180px; 
+      max-width: 280px;
+    }
 
-    /* Modal Styling für Bestätigungsabfrage */
+    /* --- Bestätigungs-Modal --- */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
       display: none;
       align-items: center;
       justify-content: center;
       z-index: 1000;
     }
+
     .modal-box {
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      max-width: 320px;
+      background: #ffffff;
+      padding: 24px;
+      border-radius: var(--radius-lg);
+      max-width: 360px;
       width: 90%;
       text-align: center;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      border: 1px solid #e2e8f0;
     }
-    .modal-box h3 { margin-top: 0; }
+
+    .modal-box h3 { 
+      margin: 0 0 8px 0; 
+      font-size: 18px;
+      color: var(--text-main);
+    }
+
+    .modal-box p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
     .modal-box .confirm-code { 
-      font-size: 18px; 
-      font-weight: bold; 
-      color: #2563eb; 
-      margin: 10px 0;
+      font-size: 20px; 
+      font-weight: 800; 
+      color: var(--module-color); 
+      margin: 14px 0;
+      padding: 10px;
+      background: var(--module-bg);
+      border-radius: var(--radius-sm);
       word-break: break-all;
     }
 
+    .modal-box .btn-group {
+      margin-top: 16px;
+      gap: 10px;
+    }
+
+    .modal-box .btn-group button {
+      min-width: unset;
+      flex: 1;
+    }
+
+    /* --- Print Styles --- */
     @media print {
       body * { visibility: hidden; }
       #printArea, #printArea * { visibility: visible; }
       #printArea { position: absolute; left: 0; top: 0; width: 100%; }
-      nav, .card > h2, #reader, input, button, .btn-group, .modal-overlay { display: none !important; }
+      nav, .card-header, #reader, .search-box, #result, .btn-group, .modal-overlay { display: none !important; }
+      #labelPreview { border: none; padding: 0; margin: 0; }
     }
   </style>
 </head>
 <body>
+
+  <!-- Navigation -->
   <nav>
-    <a href="index.html">🏠 Menü</a> |
-    <a href="buchen.html">Buchen (EK/VK)</a> |
-    <a href="platz.html">Platzabfrage</a> |
-    <a href="bestandsabfrage.html">Bestandsabfrage</a> |
-    <a href="bilanz.html">Bilanz</a> |
-    <a href="verwaltung.html">Verwaltung</a>
+    <a href="index.html" class="nav-home">🏠 Menü</a>
+    <a href="buchen.html" class="nav-buchen">📦 Ware Buchen</a>
+    <a href="artikel.html" class="nav-artikel">🔍 Artikelabfrage</a>
+    <a href="platz.html" class="nav-platz">📍 Platzabfrage</a>
+    <a href="bestandsabfrage.html" class="nav-bestand">📝 Bestandsabfrage</a>
+    <a href="bilanz.html" class="nav-bilanz">📊 Bilanz</a>
+    <a href="verwaltung.html" class="nav-verwaltung">⚙️ Verwaltung</a>
   </nav>
 
+  <!-- Hauptinhalt -->
   <div class="card">
-    <h2>Artikelabfrage & Druckansicht</h2>
+    <div class="card-header">
+      <div class="icon-badge">🔍</div>
+      <h2>Artikelabfrage & Druckansicht</h2>
+    </div>
+
     <div id="reader"></div>
 
-    <input type="text" id="barcode" placeholder="Barcode scannen / eingeben">
-    <button onclick="confirmAndQuery(document.getElementById('barcode').value)">Suchen</button>
+    <div class="search-box">
+      <input type="text" id="barcode" placeholder="Barcode scannen oder manuell eingeben...">
+      <button class="btn-search" onclick="confirmAndQuery(document.getElementById('barcode').value)">
+        🔎 Artikel Suchen
+      </button>
+    </div>
 
     <div id="result"></div>
     
@@ -132,15 +452,15 @@
         <div class="label-container" id="labelCard">
           <div id="qrcodeCanvas"></div>
           <div class="label-details">
-            <h4 id="lblTitle" style="margin: 0 0 5px 0; font-size: 14px; word-break: break-word;"></h4>
+            <h4 id="lblTitle" style="margin: 0 0 5px 0; font-size: 14px; word-break: break-word; color: #0f172a;"></h4>
             <p id="lblPrices" style="margin: 0; font-size: 16px; font-weight: bold; color: #1e293b;"></p>
-            <small id="lblCode" style="color: #64748b; font-size: 11px;"></small>
+            <small id="lblCode" style="color: #64748b; font-size: 11px; margin-top: 2px;"></small>
           </div>
         </div>
         <div class="btn-group">
           <button class="btn-print" onclick="window.print()">🖨️ Browser Drucken</button>
-          <button class="btn-export" onclick="exportNiceLabelPDF()">📄 PDF Etikett Exportieren</button>
-          <button class="btn-png" onclick="exportPNG()">🖼️ PNG Etikett Herunterladen</button>
+          <button class="btn-export" onclick="exportNiceLabelPDF()">📄 PDF Exportieren</button>
+          <button class="btn-png" onclick="exportPNG()">🖼️ PNG Herunterladen</button>
         </div>
       </div>
     </div>
@@ -153,7 +473,7 @@
       <p>Möchtest du nach folgendem Code suchen?</p>
       <div id="modalCode" class="confirm-code"></div>
       <div class="btn-group">
-        <button onclick="acceptCode()">✅ Ja, Suchen</button>
+        <button class="btn-search" onclick="acceptCode()">✅ Suchen</button>
         <button class="btn-cancel" onclick="rejectCode()">❌ Abbrechen</button>
       </div>
     </div>
@@ -213,7 +533,7 @@
     async function queryArticle(code) {
       if (!code) return;
 
-      document.getElementById('result').innerText = "Lade Daten...";
+      document.getElementById('result').innerHTML = "<p style='text-align:center; color: var(--text-muted); font-weight: 500;'>⌛ Lade Artikeldaten...</p>";
       document.getElementById('labelPreview').style.display = "none";
 
       try {
@@ -221,7 +541,7 @@
         let data = await res.json();
 
         if (!data.info || (data.info.name === "Unbekannt" && Object.keys(data.plaetze).length === 0)) {
-          document.getElementById('result').innerHTML = "<p>Kein Artikel gefunden.</p>";
+          document.getElementById('result').innerHTML = "<div class='result-card'><p style='margin:0; color:#ef4444;'>⚠️ Kein Artikel unter diesem Barcode gefunden.</p></div>";
           resumeScanner();
           return;
         }
@@ -229,13 +549,19 @@
         currentItem = data.info;
         currentItem.barcode = code;
 
-        let html = `<h3>${data.info.name}</h3>
-                    <p>EK: <b>${data.info.ek_preis} €</b> | VK: <b>${data.info.vk_preis} €</b></p>
-                    <p>Gesamtbestand: <b>${data.info.gesamtbestand} Stück</b></p><ul>`;
+        let html = `<div class="result-card">
+                      <h3>${data.info.name}</h3>
+                      <div class="result-meta">
+                        <span class="price-badge">EK: <b>${data.info.ek_preis} €</b></span>
+                        <span class="price-badge">VK: <b>${data.info.vk_preis} €</b></span>
+                        <span class="price-badge" style="background: var(--module-bg); border-color: var(--module-color); color: var(--module-color);">Gesamtbestand: <b>${data.info.gesamtbestand} Stück</b></span>
+                      </div>
+                      <strong style="font-size:14px; color: var(--text-muted);">Lagerplätze:</strong>
+                      <ul class="platz-liste">`;
         for (let p in data.plaetze) {
-          html += `<li>Lagerplatz <b>${p}</b>: ${data.plaetze[p]} Stück</li>`;
+          html += `<li>📍 <b>${p}</b>: ${data.plaetze[p]} Stk.</li>`;
         }
-        html += '</ul>';
+        html += '</ul></div>';
         document.getElementById('result').innerHTML = html;
 
         document.getElementById('lblTitle').innerText = data.info.name;
@@ -254,7 +580,7 @@
         document.getElementById('labelPreview').style.display = "block";
 
       } catch (err) {
-        document.getElementById('result').innerText = "Fehler beim Laden!";
+        document.getElementById('result').innerHTML = "<div class='result-card'><p style='margin:0; color:#ef4444;'>❌ Fehler beim Laden der Daten!</p></div>";
       } finally {
         resumeScanner();
       }
