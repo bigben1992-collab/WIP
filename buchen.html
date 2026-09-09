@@ -640,7 +640,7 @@
       <div id="status"></div>
       
       <div id="invoiceArea" style="display: none; margin-top: 12px;">
-        <button class="btn-pdf" onclick="generateInvoicePDF()">📄 Rechnung / Quittung als PDF herunterladen</button>
+        <button class="btn-pdf" onclick="generateInvoicePDF()">📄 ZUGFeRD PDF-Rechnung herunterladen</button>
       </div>
     </div>
 
@@ -1101,48 +1101,163 @@
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
 
-      /* =========================================================
-         BILD-EINBINDUNG (6548.jpg)
-         ========================================================= */
-      const logoPath = "6548.jpg"; 
+      // =========================================================
+      // 1. ZUGFeRD / Factur-X Daten & XML-Generierung
+      // =========================================================
+      const sellerInfo = {
+        name: "Lager Beta Firmenname",
+        street: "Musterstraße 123",
+        zip: "12345",
+        city: "Musterstadt",
+        country: "DE",
+        vatId: "DE123456789",
+        taxNum: "12/345/67890"
+      };
 
-      // OPTION A: Hintergrundbild / Wasserzeichen (auskommentiert)
-      /*
+      const buyerInfo = {
+        name: "Barverkauf / Kunde",
+        street: "Kundengasse 1",
+        zip: "54321",
+        city: "Kundenstadt",
+        country: "DE"
+      };
+
+      const vatRate = 19; // 19% MwSt.
+      const totalGross = Number(lastBookingData.gesamt);
+      const totalNet = Number((totalGross / (1 + vatRate / 100)).toFixed(2));
+      const vatAmount = Number((totalGross - totalNet).toFixed(2));
+      const unitNetPrice = Number((totalNet / lastBookingData.menge).toFixed(2));
+
+      // ISO Datum YYYYMMDD
+      const dateParts = lastBookingData.date.split('.');
+      const isoDate = dateParts.length === 3 
+        ? `${dateParts[2]}${dateParts[1].padStart(2, '0')}${dateParts[0].padStart(2, '0')}`
+        : new Date().toISOString().slice(0, 10).replace(/-/g, '');
+
+      const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+<rsm:CrossIndustryInvoice xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100"
+  xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100"
+  xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100">
+  <rsm:ExchangedDocumentContext>
+    <ram:GuidelineSpecifiedDocumentContextParameter>
+      <ram:ID>urn:factur-x.eu:1p0:basic</ram:ID>
+    </ram:GuidelineSpecifiedDocumentContextParameter>
+  </rsm:ExchangedDocumentContext>
+  <rsm:ExchangedDocument>
+    <ram:ID>${lastBookingData.id}</ram:ID>
+    <ram:TypeCode>380</ram:TypeCode>
+    <ram:IssueDateTime>
+      <udt:DateTimeString format="102">${isoDate}</udt:DateTimeString>
+    </ram:IssueDateTime>
+  </rsm:ExchangedDocument>
+  <rsm:SupplyChainTradeTransaction>
+    <ram:IncludedSupplyChainTradeLineItem>
+      <ram:AssociatedDocumentLineDocument>
+        <ram:LineID>1</ram:LineID>
+      </ram:AssociatedDocumentLineDocument>
+      <ram:SpecifiedTradeProduct>
+        <ram:GlobalID schemeID="0160">${escapeXml(lastBookingData.barcode)}</ram:GlobalID>
+        <ram:Name>${escapeXml(lastBookingData.name)}</ram:Name>
+      </ram:SpecifiedTradeProduct>
+      <ram:SpecifiedLineTradeAgreement>
+        <ram:NetPriceProductTradePrice>
+          <ram:ChargeAmount>${unitNetPrice.toFixed(2)}</ram:ChargeAmount>
+        </ram:NetPriceProductTradePrice>
+      </ram:SpecifiedLineTradeAgreement>
+      <ram:SpecifiedLineTradeDelivery>
+        <ram:BilledQuantity unitCode="H87">${lastBookingData.menge}</ram:BilledQuantity>
+      </ram:SpecifiedLineTradeDelivery>
+      <ram:SpecifiedLineTradeSettlement>
+        <ram:ApplicableTradeTax>
+          <ram:TypeCode>VAT</ram:TypeCode>
+          <ram:CategoryCode>S</ram:CategoryCode>
+          <ram:RateApplicablePercent>${vatRate}</ram:RateApplicablePercent>
+        </ram:ApplicableTradeTax>
+        <ram:SpecifiedTradeSettlementLineMonetarySummation>
+          <ram:LineTotalAmount>${totalNet.toFixed(2)}</ram:LineTotalAmount>
+        </ram:SpecifiedTradeSettlementLineMonetarySummation>
+      </ram:SpecifiedLineTradeSettlement>
+    </ram:IncludedSupplyChainTradeLineItem>
+    <ram:ApplicableHeaderTradeAgreement>
+      <ram:SellerTradeParty>
+        <ram:Name>${escapeXml(sellerInfo.name)}</ram:Name>
+        <ram:PostalTradeAddress>
+          <ram:PostcodeCode>${sellerInfo.zip}</ram:PostcodeCode>
+          <ram:LineOne>${escapeXml(sellerInfo.street)}</ram:LineOne>
+          <ram:CityName>${escapeXml(sellerInfo.city)}</ram:CityName>
+          <ram:CountryID>${sellerInfo.country}</ram:CountryID>
+        </ram:PostalTradeAddress>
+        <ram:SpecifiedTaxRegistration>
+          <ram:ID schemeID="VA">${sellerInfo.vatId}</ram:ID>
+        </ram:SpecifiedTaxRegistration>
+      </ram:SellerTradeParty>
+      <ram:BuyerTradeParty>
+        <ram:Name>${escapeXml(buyerInfo.name)}</ram:Name>
+        <ram:PostalTradeAddress>
+          <ram:PostcodeCode>${buyerInfo.zip}</ram:PostcodeCode>
+          <ram:LineOne>${escapeXml(buyerInfo.street)}</ram:LineOne>
+          <ram:CityName>${escapeXml(buyerInfo.city)}</ram:CityName>
+          <ram:CountryID>${buyerInfo.country}</ram:CountryID>
+        </ram:PostalTradeAddress>
+      </ram:BuyerTradeParty>
+    </ram:ApplicableHeaderTradeAgreement>
+    <ram:ApplicableHeaderTradeDelivery/>
+    <ram:ApplicableHeaderTradeSettlement>
+      <ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>
+      <ram:ApplicableTradeTax>
+        <ram:CalculatedAmount>${vatAmount.toFixed(2)}</ram:CalculatedAmount>
+        <ram:TypeCode>VAT</ram:TypeCode>
+        <ram:BasisAmount>${totalNet.toFixed(2)}</ram:BasisAmount>
+        <ram:CategoryCode>S</ram:CategoryCode>
+        <ram:RateApplicablePercent>${vatRate}</ram:RateApplicablePercent>
+      </ram:ApplicableTradeTax>
+      <ram:SpecifiedTradeSettlementHeaderMonetarySummation>
+        <ram:LineTotalAmount>${totalNet.toFixed(2)}</ram:LineTotalAmount>
+        <ram:TaxBasisTotalAmount>${totalNet.toFixed(2)}</ram:TaxBasisTotalAmount>
+        <ram:TaxTotalAmount currencyID="EUR">${vatAmount.toFixed(2)}</ram:TaxTotalAmount>
+        <ram:GrandTotalAmount>${totalGross.toFixed(2)}</ram:GrandTotalAmount>
+        <ram:DuePayableAmount>${totalGross.toFixed(2)}</ram:DuePayableAmount>
+      </ram:SpecifiedTradeSettlementHeaderMonetarySummation>
+    </ram:ApplicableHeaderTradeSettlement>
+  </rsm:SupplyChainTradeTransaction>
+</rsm:CrossIndustryInvoice>`;
+
+      // XML in PDF einbetten
       try {
-        doc.saveGraphicsState();
-        doc.setGState(new doc.GState({ opacity: 0.08 })); // Blass/Transparent
-        doc.addImage(logoPath, 'JPEG', 30, 80, 150, 150); 
-        doc.restoreGraphicsState();
+        doc.addAttachment({
+          fileData: xmlContent,
+          fileName: "factur-x.xml",
+          mimeType: "text/xml",
+          description: "ZUGFeRD / Factur-X E-Invoice Data"
+        });
       } catch (e) {
-        console.log("Wasserzeichen konnte nicht geladen werden:", e);
+        console.log("Fehler beim Einbetten des XML-Attachments:", e);
       }
-      */
 
-      // OPTION B: Logo in der Kopfzeile (oben rechts)
+      // =========================================================
+      // 2. Visuelles PDF Layout
+      // =========================================================
+      const logoPath = "6548.jpg"; 
       let startHeaderY = 20;
       let logoAdded = false;
 
       try {
-        // addImage(imageData, format, x, y, width, height)
         doc.addImage(logoPath, 'JPEG', 140, 12, 50, 20);
         logoAdded = true;
       } catch (e) {
         console.log("Logo konnte nicht geladen werden:", e);
       }
 
-      // Falls das Bild lokal nicht erreichbar ist (z. B. Fallback ohne Webserver):
       if (!logoAdded) {
-        doc.setDrawColor(203, 213, 225); // #cbd5e1
-        doc.setFillColor(248, 250, 252); // #f8fafc
+        doc.setDrawColor(203, 213, 225);
+        doc.setFillColor(248, 250, 252);
         doc.roundedRect(140, 12, 55, 20, 2, 2, 'FD');
-        
         doc.setFontSize(8);
-        doc.setTextColor(148, 163, 184); // #94a3b8
+        doc.setTextColor(148, 163, 184);
         doc.setFont("helvetica", "bold");
         doc.text("[ 6548.jpg ]", 167, 23, { align: "center" });
       }
 
-      // --- Rechnungs-Header ---
       doc.setTextColor(15, 23, 42);
       doc.setFontSize(20);
       doc.setFont("helvetica", "bold");
@@ -1154,18 +1269,30 @@
       doc.text(`Beleg-Nr.: ${lastBookingData.id}`, 14, startHeaderY + 10);
       doc.text(`Datum: ${lastBookingData.date} - ${lastBookingData.time}`, 14, startHeaderY + 15);
 
-      // --- Tabelle ---
+      // Verkäufer / Käufer Adressblock
+      doc.setFontSize(8);
+      doc.setTextColor(71, 85, 105);
+      doc.text(`${sellerInfo.name} · ${sellerInfo.street} · ${sellerInfo.zip} ${sellerInfo.city}`, 14, startHeaderY + 23);
+
+      doc.setFontSize(9);
+      doc.setTextColor(15, 23, 42);
+      doc.setFont("helvetica", "bold");
+      doc.text("Empfänger:", 14, startHeaderY + 30);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${buyerInfo.name}\n${buyerInfo.street}\n${buyerInfo.zip} ${buyerInfo.city}`, 14, startHeaderY + 35);
+
+      // Tabelle
       doc.autoTable({
-        startY: startHeaderY + 25,
-        head: [['Pos.', 'Barcode', 'Artikelbeschreibung', 'Menge', 'Einzelpreis', 'Gesamt']],
+        startY: startHeaderY + 52,
+        head: [['Pos.', 'Barcode', 'Artikelbeschreibung', 'Menge', 'Einzelpreis (Netto)', 'Gesamt (Brutto)']],
         body: [
           [
             '1',
             lastBookingData.barcode,
             lastBookingData.name,
             `${lastBookingData.menge} Stk.`,
-            `${lastBookingData.preis.toFixed(2)} €`,
-            `${lastBookingData.gesamt} €`
+            `${unitNetPrice.toFixed(2)} €`,
+            `${totalGross.toFixed(2)} €`
           ]
         ],
         theme: 'striped',
@@ -1173,20 +1300,43 @@
         styles: { font: "helvetica", fontSize: 9 }
       });
 
-      // --- Gesamtbetrag & Fußzeile ---
-      let finalY = doc.lastAutoTable.finalY + 12;
+      let finalY = doc.lastAutoTable.finalY + 10;
+
+      // Summenblock
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(71, 85, 105);
       
-      doc.setFontSize(12);
+      doc.text(`Netto gesamt:`, 140, finalY);
+      doc.text(`${totalNet.toFixed(2)} EUR`, 196, finalY, { align: "right" });
+      
+      doc.text(`zzgl. ${vatRate}% MwSt.:`, 140, finalY + 5);
+      doc.text(`${vatAmount.toFixed(2)} EUR`, 196, finalY + 5, { align: "right" });
+
+      doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(15, 23, 42);
-      doc.text(`Gesamtbetrag: ${lastBookingData.gesamt} EUR`, 196, finalY, { align: "right" });
+      doc.text(`Gesamtbetrag (Brutto):`, 140, finalY + 12);
+      doc.text(`${totalGross.toFixed(2)} EUR`, 196, finalY + 12, { align: "right" });
 
-      doc.setFontSize(9);
+      // Fußzeile
+      doc.setFontSize(8);
       doc.setFont("helvetica", "italic");
       doc.setTextColor(100, 116, 139);
-      doc.text("Vielen Dank für Ihren Einkauf!", 14, finalY + 15);
+      doc.text("Vielen Dank für Ihren Einkauf! Diese Rechnung wurde elektronisch erstellt und ist ZUGFeRD/Factur-X-konform.", 14, finalY + 25);
+      doc.text(`USt-IdNr.: ${sellerInfo.vatId} | St.-Nr.: ${sellerInfo.taxNum}`, 14, finalY + 29);
 
       doc.save(`Rechnung_${lastBookingData.id}.pdf`);
+    }
+
+    function escapeXml(text) {
+      if (!text) return "";
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&apos;");
     }
 
     function escapeHtml(text) {
