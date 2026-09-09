@@ -1322,16 +1322,16 @@
       doc.setFont("helvetica", "normal");
       doc.setTextColor(71, 85, 105);
       
-      doc.text(`Netto gesamt:`, 140, finalY);
+      doc.text(`Netto gesamt:`, 120, finalY);
       doc.text(`${totalNet.toFixed(2)} EUR`, 196, finalY, { align: "right" });
       
-      doc.text(`zzgl. ${vatRate}% MwSt.:`, 140, finalY + 5);
+      doc.text(`zzgl. ${vatRate}% MwSt.:`, 120, finalY + 5);
       doc.text(`${vatAmount.toFixed(2)} EUR`, 196, finalY + 5, { align: "right" });
 
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(15, 23, 42);
-      doc.text(`Gesamtbetrag (Brutto):`, 140, finalY + 12);
+      doc.text(`Gesamtbetrag (Brutto):`, 120, finalY + 12);
       doc.text(`${totalGross.toFixed(2)} EUR`, 196, finalY + 12, { align: "right" });
 
       // Fußzeile
@@ -1349,7 +1349,7 @@
       return String(text)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
-        .replace/>/g, "&gt;")
+        .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&apos;");
     }
