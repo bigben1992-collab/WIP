@@ -539,12 +539,9 @@
     <!-- Header mit Logo -->
     <header class="header">
       <div class="logo-container">
-        <!-- 
-          SOBALD EIN LOGO VORHANDEN IST: 
-          Ersetzen Sie den div.logo-placeholder durch folgendes <img> Tag:
-          <img src="pfad/zu/ihrem-logo.png" alt="Firmenlogo">
-        -->
-        <div class="logo-placeholder">
+        <!-- HTML-Logo Einbindung für das Hauptmenü -->
+        <img src="6548.jpg" alt="Firmenlogo" onerror="this.style.display='none'; document.getElementById('mainLogoPlaceholder').style.display='flex';">
+        <div id="mainLogoPlaceholder" class="logo-placeholder" style="display:none;">
           [ Ihr Logo hier ]
         </div>
       </div>
@@ -1105,34 +1102,36 @@
       const doc = new jsPDF();
 
       /* =========================================================
-         LOGOPLATZHALTER / HINTERGRUND
-         =========================================================
-         Ersetzen Sie 'LOGO_BASE64_STRING' durch Ihren echten Base64-Data-URL 
-         (z. B. "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...") 
-         oder einen Bildpfad ("img/logo.png").
-      ========================================================= */
-      const logoData = "LOGO_BASE64_STRING"; 
+         BILD-EINBINDUNG (6548.jpg)
+         ========================================================= */
+      const logoPath = "6548.jpg"; 
 
-      // OPTION A: Wasserzeichen / Hintergrundbild (dezent zentriert)
+      // OPTION A: Hintergrundbild / Wasserzeichen (auskommentiert)
       /*
-      if (logoData && logoData !== "LOGO_BASE64_STRING") {
+      try {
         doc.saveGraphicsState();
-        doc.setGState(new doc.GState({ opacity: 0.08 })); // Sehr blass
-        doc.addImage(logoData, 'PNG', 30, 80, 150, 150); 
+        doc.setGState(new doc.GState({ opacity: 0.08 })); // Blass/Transparent
+        doc.addImage(logoPath, 'JPEG', 30, 80, 150, 150); 
         doc.restoreGraphicsState();
+      } catch (e) {
+        console.log("Wasserzeichen konnte nicht geladen werden:", e);
       }
       */
 
-      // OPTION B: Logo in der Kopfzeile (Oben rechts)
+      // OPTION B: Logo in der Kopfzeile (oben rechts)
       let startHeaderY = 20;
-      if (logoData && logoData !== "LOGO_BASE64_STRING") {
-        try {
-          doc.addImage(logoData, 'PNG', 140, 12, 50, 20); 
-        } catch (e) {
-          console.log("Logo konnte nicht geladen werden:", e);
-        }
-      } else {
-        // Visueller Platzhalter als Text/Rahmen im PDF
+      let logoAdded = false;
+
+      try {
+        // addImage(imageData, format, x, y, width, height)
+        doc.addImage(logoPath, 'JPEG', 140, 12, 50, 20);
+        logoAdded = true;
+      } catch (e) {
+        console.log("Logo konnte nicht geladen werden:", e);
+      }
+
+      // Falls das Bild lokal nicht erreichbar ist (z. B. Fallback ohne Webserver):
+      if (!logoAdded) {
         doc.setDrawColor(203, 213, 225); // #cbd5e1
         doc.setFillColor(248, 250, 252); // #f8fafc
         doc.roundedRect(140, 12, 55, 20, 2, 2, 'FD');
@@ -1140,7 +1139,7 @@
         doc.setFontSize(8);
         doc.setTextColor(148, 163, 184); // #94a3b8
         doc.setFont("helvetica", "bold");
-        doc.text("[ IHR LOGO HIER ]", 167, 23, { align: "center" });
+        doc.text("[ 6548.jpg ]", 167, 23, { align: "center" });
       }
 
       // --- Rechnungs-Header ---
