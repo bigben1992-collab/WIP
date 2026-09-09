@@ -667,6 +667,7 @@
     let pendingScanText = "";
     let isPaused = false;
     let allMasterArticles = [];
+    let companySettings = null;
 
     const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 200 });
     
@@ -730,9 +731,22 @@
     });
 
     document.addEventListener("DOMContentLoaded", () => {
+      loadSettings();
       loadStorageLocations();
       initShoppingListDrawer();
     });
+
+    async function loadSettings() {
+      try {
+        let res = await fetch(`${API_URL}?action=getSettings`);
+        let resData = await res.json();
+        if (resData.status === "success") {
+          companySettings = resData.data;
+        }
+      } catch (e) {
+        console.log("Fehler beim Laden der Einstellungen aus dem Backend:", e);
+      }
+    }
 
     function toggleShoppingList() {
       let drawer = document.getElementById('shoppingListDrawer');
@@ -1102,16 +1116,17 @@
       const doc = new jsPDF();
 
       // =========================================================
-      // 1. ZUGFeRD / Factur-X Daten & XML-Generierung
+      // 1. ZUGFeRD / Factur-X Daten aus Backend-Einstellungen
       // =========================================================
+      const settings = companySettings || {};
       const sellerInfo = {
-        name: "Lager Beta Firmenname",
-        street: "Musterstraße 123",
-        zip: "12345",
-        city: "Musterstadt",
-        country: "DE",
-        vatId: "DE123456789",
-        taxNum: "12/345/67890"
+        name: settings.seller_name || "Lager Beta Firmenname",
+        street: settings.seller_street || "Musterstraße 123",
+        zip: settings.seller_zip || "12345",
+        city: settings.seller_city || "Musterstadt",
+        country: settings.seller_country || "DE",
+        vatId: settings.seller_vatId || "DE123456789",
+        taxNum: settings.seller_taxNum || "12/345/67890"
       };
 
       const buyerInfo = {
@@ -1122,7 +1137,7 @@
         country: "DE"
       };
 
-      const vatRate = 19; // 19% MwSt.
+      const vatRate = Number(settings.vat_rate) || 19;
       const totalGross = Number(lastBookingData.gesamt);
       const totalNet = Number((totalGross / (1 + vatRate / 100)).toFixed(2));
       const vatAmount = Number((totalGross - totalNet).toFixed(2));
@@ -1334,7 +1349,7 @@
       return String(text)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
+        .replace/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&apos;");
     }
