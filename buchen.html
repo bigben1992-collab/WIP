@@ -551,7 +551,7 @@
       <h1>Ware Buchen</h1>
     </header>
 
-    <!-- Navigation als ausklappbares Akkordeon (ohne den Punkt 'Ware Buchen') -->
+    <!-- Navigation als ausklappbares Akkordeon -->
     <details class="nav-accordion">
       <summary class="nav-summary">
         <span>📍 Navigation / Modul wechseln</span>
@@ -1104,17 +1104,60 @@
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
 
+      /* =========================================================
+         LOGOPLATZHALTER / HINTERGRUND
+         =========================================================
+         Ersetzen Sie 'LOGO_BASE64_STRING' durch Ihren echten Base64-Data-URL 
+         (z. B. "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...") 
+         oder einen Bildpfad ("img/logo.png").
+      ========================================================= */
+      const logoData = "LOGO_BASE64_STRING"; 
+
+      // OPTION A: Wasserzeichen / Hintergrundbild (dezent zentriert)
+      /*
+      if (logoData && logoData !== "LOGO_BASE64_STRING") {
+        doc.saveGraphicsState();
+        doc.setGState(new doc.GState({ opacity: 0.08 })); // Sehr blass
+        doc.addImage(logoData, 'PNG', 30, 80, 150, 150); 
+        doc.restoreGraphicsState();
+      }
+      */
+
+      // OPTION B: Logo in der Kopfzeile (Oben rechts)
+      let startHeaderY = 20;
+      if (logoData && logoData !== "LOGO_BASE64_STRING") {
+        try {
+          doc.addImage(logoData, 'PNG', 140, 12, 50, 20); 
+        } catch (e) {
+          console.log("Logo konnte nicht geladen werden:", e);
+        }
+      } else {
+        // Visueller Platzhalter als Text/Rahmen im PDF
+        doc.setDrawColor(203, 213, 225); // #cbd5e1
+        doc.setFillColor(248, 250, 252); // #f8fafc
+        doc.roundedRect(140, 12, 55, 20, 2, 2, 'FD');
+        
+        doc.setFontSize(8);
+        doc.setTextColor(148, 163, 184); // #94a3b8
+        doc.setFont("helvetica", "bold");
+        doc.text("[ IHR LOGO HIER ]", 167, 23, { align: "center" });
+      }
+
+      // --- Rechnungs-Header ---
+      doc.setTextColor(15, 23, 42);
       doc.setFontSize(20);
       doc.setFont("helvetica", "bold");
-      doc.text("RECHNUNG / QUITTUNG", 14, 20);
+      doc.text("RECHNUNG / QUITTUNG", 14, startHeaderY);
 
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.text(`Beleg-Nr.: ${lastBookingData.id}`, 14, 30);
-      doc.text(`Datum: ${lastBookingData.date} - ${lastBookingData.time}`, 14, 35);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Beleg-Nr.: ${lastBookingData.id}`, 14, startHeaderY + 10);
+      doc.text(`Datum: ${lastBookingData.date} - ${lastBookingData.time}`, 14, startHeaderY + 15);
 
+      // --- Tabelle ---
       doc.autoTable({
-        startY: 45,
+        startY: startHeaderY + 25,
         head: [['Pos.', 'Barcode', 'Artikelbeschreibung', 'Menge', 'Einzelpreis', 'Gesamt']],
         body: [
           [
@@ -1127,16 +1170,21 @@
           ]
         ],
         theme: 'striped',
-        headStyles: { fillColor: [16, 185, 129] }
+        headStyles: { fillColor: [16, 185, 129] },
+        styles: { font: "helvetica", fontSize: 9 }
       });
 
-      let finalY = doc.lastAutoTable.finalY + 10;
+      // --- Gesamtbetrag & Fußzeile ---
+      let finalY = doc.lastAutoTable.finalY + 12;
+      
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
-      doc.text(`Gesamtbetrag: ${lastBookingData.gesamt} EUR`, 140, finalY);
+      doc.setTextColor(15, 23, 42);
+      doc.text(`Gesamtbetrag: ${lastBookingData.gesamt} EUR`, 196, finalY, { align: "right" });
 
       doc.setFontSize(9);
       doc.setFont("helvetica", "italic");
+      doc.setTextColor(100, 116, 139);
       doc.text("Vielen Dank für Ihren Einkauf!", 14, finalY + 15);
 
       doc.save(`Rechnung_${lastBookingData.id}.pdf`);
